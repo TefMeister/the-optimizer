@@ -72,7 +72,72 @@ def measure_window_from_a_recording():
           "measure_window: the last 5 s of a recording")
 
 
-TESTS = [look_writes_twelve_heads, measure_window_from_a_recording]
+# ---- Task 5: the spots list ------------------------------------------------------------------------------------
+def _saves(n, folder="saves"):
+    d = os.path.join(T, folder, "SaveGames", "1234")
+    os.makedirs(d, exist_ok=True)
+    for name in os.listdir(d):
+        os.remove(os.path.join(d, name))
+    for i in n:
+        with open(os.path.join(d, f"SaveGameData_{i}.sav"), "wb") as f:
+            f.write(b"save %d" % i)
+    return {"name": "pretend", "spots_find": {"save_glob": os.path.join(T, folder, "SaveGames", "*", "SaveGameData_*.sav"),
+                                              "slot_re": r"SaveGameData_(\d+)\.sav$", "reach": "save_slot"}}
+
+
+def find_lists_every_slot():
+    from engine import spots as SP
+    pack = _saves(range(7), "s1")
+    added = SP.find("g1", pack)
+    sp = SP.load("g1")
+    check(added == 7 and [s["id"] for s in sp] == [f"slot{i}" for i in range(7)],
+          "find_lists_every_slot: slot0 .. slot6")
+    check(sp[3]["label"] == "save slot 3 (not named yet)" and sp[3]["by"] == "robot" and not sp[3]["struck"]
+          and sp[3]["reach"] == {"kind": "save_slot", "value": 3}, "find_lists_every_slot: each says how it is reached")
+
+
+def find_twice_adds_none():
+    from engine import spots as SP
+    pack = _saves(range(7), "s2")
+    SP.find("g2", pack)
+    check(SP.find("g2", pack) == 0 and len(SP.load("g2")) == 7, "find_twice_adds_none")
+
+
+def person_add_and_strike():
+    from engine import spots as SP
+    pack = _saves(range(2), "s3")
+    SP.find("g3", pack)
+    sid = SP.add("g3", "the hotel lobby", "console", "open Hotel_Lobby")
+    SP.strike("g3", "slot1")
+    SP.name("g3", "slot0", "the prison armory")
+    sp = {s["id"]: s for s in SP.load("g3")}
+    check(sp[sid]["by"] == "person" and sp[sid]["reach"] == {"kind": "console", "value": "open Hotel_Lobby"},
+          "person_add_and_strike: a spot added by the person")
+    check(sp["slot1"]["struck"] and [s["id"] for s in SP.active("g3")] == ["slot0", sid],
+          "person_add_and_strike: a struck spot is not visited")
+    check(sp["slot0"]["label"] == "the prison armory", "person_add_and_strike: a spot can be named")
+
+
+def find_after_slots_change():
+    from engine import spots as SP
+    pack = _saves([0, 1, 2], "s4")
+    SP.find("g4", pack)
+    SP.strike("g4", "slot1")
+    SP.name("g4", "slot0", "the armory")
+    pack = _saves([0, 1, 3, 4], "s4")            # slot 2 is gone, slots 3 and 4 are new
+    added = SP.find("g4", pack)
+    sp = {s["id"]: s for s in SP.load("g4")}
+    check(added == 2 and "slot3" in sp and "slot4" in sp, "find_after_slots_change: the new slots are added")
+    check(sp["slot1"]["struck"] and sp["slot0"]["label"] == "the armory",
+          "find_after_slots_change: the person's strike and name are kept")
+    check("slot2" not in [s["id"] for s in SP.active("g4")], "find_after_slots_change: a vanished slot is never measured")
+    _saves([0, 1, 2, 3, 4], "s4")
+    SP.find("g4", pack)
+    check("slot2" in [s["id"] for s in SP.active("g4")], "find_after_slots_change: and comes back when its file does")
+
+
+TESTS = [look_writes_twelve_heads, measure_window_from_a_recording, find_lists_every_slot, find_twice_adds_none,
+         person_add_and_strike, find_after_slots_change]
 
 
 def main():
