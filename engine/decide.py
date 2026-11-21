@@ -80,7 +80,9 @@ def plain(summary, gpu, v):
     s = (f"{summary['fps']} frames a second on average, the slowest 1% at {summary['low1_fps']}; "
          f"{summary['late_pct']}% late against {summary['target']:g} ({summary['late']} of {summary['frames']})")
     if gpu and gpu.get("load_avg") is not None:
-        s += f"; graphics card {gpu['load_avg']:g}% busy, up to {gpu.get('temp_max', '?'):g} C"
+        s += f"; graphics card {gpu['load_avg']:g}% busy"
+        if gpu.get("temp_max") is not None:
+            s += f", up to {gpu['temp_max']:g} C"
     word = {"holds": "HOLDS", "fails": "DOES NOT HOLD", "short": "TOO SHORT"}[v["result"]]
     tail = ""
     if v["result"] == "fails" and v["bound"]:

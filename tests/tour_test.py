@@ -17,6 +17,7 @@ os.environ["OPTIMIZER_NO_GPU"] = "1"
 os.environ["OPTIMIZER_RUNTIME"] = "virtualdesktop"
 os.environ["OPTIMIZER_LANES_CONF"] = os.path.join(T, "lanes.conf")
 os.environ["OPTIMIZER_UEVR_BASE"] = "http://127.0.0.1:9"      # no connector answers there
+os.environ["OPTIMIZER_FAKE_RUNNING"] = "0"                     # the pretend game is closed unless a test says
 
 
 def check(ok, what):
@@ -365,12 +366,106 @@ def markers_written_per_look():
           and all("rt=" in r[3] for r in rows), "markers_written_per_look: one marker file, a line per look with the settings")
 
 
+# ---- Task 7: apply, the result, undo ---------------------------------------------------------------------------
+def _finished(game, nslots=1, judge=None):
+    """A tour driven to 'applying', with one setting the game keeps in a file (dlss) and two live-only ones."""
+    from engine import tour as TR
+    smooth, heavy = _recs()
+    knobs = LIVE_KNOBS + [dict(RESTART_KNOB)]
+    p = _pack(game, nslots, knobs=knobs)
+    for k in p["settings"]["knobs"]:
+        if k["id"] == "dlss":
+            k["keep"] = k["file"]
+            with open(k["file"], "w", encoding="utf-8", newline="") as f:
+                f.write("[Graphics]\r\nDLSS=2\r\nVSync=0\r\n")
+    TR.begin(game, p, build="b1")
+    drive(game, judge or (lambda spot, lv: (smooth, {"load_avg": 60}) if lv["dlss"] == 0 else (heavy, {"load_avg": 97})),
+          stop_at={"apply_all"})
+    return p, [k for k in p["settings"]["knobs"] if k["id"] == "dlss"][0]["file"]
+
+
+def apply_reports_live_only():
+    from engine import finish as F
+    from engine import tour as TR
+    _, ini = _finished("t7a")
+    lines = F.apply("t7a")
+    tour = TR.load("t7a")
+    live = [ln for ln in lines if "holds only while you re-apply it" in ln]
+    check(len(live) == 2 and any("Ray-traced reflections" in ln for ln in live),
+          "apply_reports_live_only: the two live-only settings are said to hold only while re-applied")
+    check(list(tour["applied"]) == ["dlss"] and "DLSS=1" in open(ini, newline="").read(),
+          "apply_reports_live_only: only the file setting counts as applied, and it is written")
+    check(tour["phase"] == "done", "apply_reports_live_only: the tour is done")
+
+
+def apply_refused_while_running():
+    from engine import finish as F
+    _, ini = _finished("t7e")
+    os.environ["OPTIMIZER_FAKE_RUNNING"] = "1"
+    try:
+        lines = F.apply("t7e")
+    finally:
+        os.environ["OPTIMIZER_FAKE_RUNNING"] = "0"
+    check("close it" in " ".join(lines) and "DLSS=2" in open(ini, newline="").read(),
+          "apply waits for the game to be closed (it would write its own settings over ours)")
+
+
+def apply_reports_undone_setting():
+    from engine import finish as F
+    _, ini = _finished("t7b")
+    F.apply("t7b")
+    with open(ini, "w", newline="") as f:                     # the game wrote its own value back at its start
+        f.write("[Graphics]\r\nDLSS=2\r\nVSync=0\r\n")
+    lines = F.check_applied("t7b")
+    check(any("DLSS level" in ln and "did not stick" in ln for ln in lines),
+          "apply_reports_undone_setting: a setting the game undid is said not to have stuck")
+    F.apply("t7b")
+    check(not any("did not stick" in ln for ln in F.check_applied("t7b")), "and one that stuck is not")
+
+
+def result_lists_everything():
+    from engine import finish as F
+    smooth, heavy = _recs()
+
+    def judge(spot, lv):
+        if spot == "slot1":
+            return (heavy, {"load_avg": 50})
+        if spot == "slot2":
+            return "crash"
+        if spot == "slot3":
+            return "die"
+        return (smooth, {"load_avg": 60}) if lv["dlss"] == 0 else (heavy, {"load_avg": 97})
+    _finished("t7c", nslots=4, judge=judge)
+    F.apply("t7c")
+    lines = F.result("t7c")
+    text = "\n".join(lines)
+    check(os.path.isfile(os.path.join(os.environ["OPTIMIZER_DIR"], "t7c", "result.txt")),
+          "result_lists_everything: result.txt written")
+    check("The spots, worst first" in text and "save slot 0" in text, "result_lists_everything: the spots ranked")
+    check("DLSS level: 2 -> 1" in text and "costs in looks: some" in text,
+          "result_lists_everything: each setting with what it costs in looks")
+    check("settings can't fix these" in text and "short by" in text, "result_lists_everything: the processor list")
+    check("could not be reached" in text and "unsafe" in text, "result_lists_everything: unreachable and unsafe spots")
+    check("Measured with" in text and "pretend headset" in text, "result_lists_everything: what was measured with")
+
+
+def undo_restores_every_file():
+    from engine import finish as F
+    _, ini = _finished("t7d")
+    before = open(ini, newline="").read()
+    F.apply("t7d")
+    lines = F.undo("t7d")
+    check(open(ini, newline="").read() == before and any("restored" in ln for ln in lines),
+          "undo_restores_every_file: the game's file is back byte for byte")
+
+
 TESTS = [look_writes_twelve_heads, measure_window_from_a_recording, find_lists_every_slot, find_twice_adds_none,
          person_add_and_strike, find_after_slots_change, rank_picks_worst_card_bound,
          all_processor_bound_changes_nothing, short_measure_is_not_ranked, crash_retry_then_unreachable,
          died_twice_is_unsafe, final_lap_two_rounds_max, tour_resumes_mid_spot, strike_mid_tour,
          cost_below_noise_subtracts_nothing, cost_above_noise_is_subtracted, restart_only_settings_come_last,
-         markers_written_per_look]
+         markers_written_per_look, apply_reports_live_only, apply_refused_while_running,
+         apply_reports_undone_setting, result_lists_everything, undo_restores_every_file]
 
 
 def main():
