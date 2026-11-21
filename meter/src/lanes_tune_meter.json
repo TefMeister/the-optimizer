@@ -1,0 +1,11 @@
+{
+  "file_format_version": "1.0.0",
+  "api_layer": {
+    "name": "XR_APILAYER_LANES_tune_meter",
+    "library_path": "./lanes_tune_meter.dll",
+    "api_version": "1.0",
+    "implementation_version": "1",
+    "description": "Tune-o-matiC frame meter (Lanes): writes down how long every VR frame took; changes nothing",
+    "disable_environment": "DISABLE_LANES_TUNE_METER"
+  }
+}

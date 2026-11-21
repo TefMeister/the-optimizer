@@ -1,0 +1,25 @@
+{
+  "label": "Breath of the Wild in Cemu with Crementif's BetterVR",
+  "notes": "The picture settings live in BetterVR's own Graphics pack inside Cemu (Options, Graphic packs), so they are 'ask' settings: The Optimizer names the step, the person (or a Menu-o-matiC route) picks it, and `python -m engine.cli set` records it. Foveated rendering is in BetterVR_settings.ini. Preset names are from BetterVR's BreathOfTheWild_Graphics rules.txt as installed 2026-11-21; Tefa ran 2x on a 72 Hz headset then.",
+  "knobs": [
+    {"id": "resolution", "label": "VR Resolution Multiplier", "kind": "ask",
+     "where": "Cemu: Options, Graphic packs, BetterVR's Graphics pack, 'VR Resolution Multiplier' (then restart the game)",
+     "steps": ["0.75x", "1x", "1.25x", "1.5x", "1.75x", "2x", "2.25x", "3x"], "default": 1, "floor": 1,
+     "shows": 3, "cost": 3, "restart": true},
+    {"id": "shadows", "label": "Shadows (resolution)", "kind": "ask",
+     "where": "Cemu: Options, Graphic packs, BetterVR's Graphics pack, 'Shadows'",
+     "steps": ["Low (50%)", "Medium (100%)", "High (200%)", "Ultra (300%)"], "default": 1, "floor": 0,
+     "shows": 2, "cost": 2, "restart": true},
+    {"id": "shadow_distance", "label": "Shadow draw distance", "kind": "ask",
+     "where": "Cemu: Options, Graphic packs, BetterVR's Graphics pack, 'Shadow Draw Distance'",
+     "steps": ["Medium", "High", "Very High", "Ultra"], "default": 1, "floor": 0,
+     "shows": 1, "cost": 2, "restart": true},
+    {"id": "quality", "label": "Quality preset (god rays, shadows)", "kind": "ask",
+     "where": "Cemu: Options, Graphic packs, BetterVR's Graphics pack, 'Quality Preset / Performance Hacks'",
+     "steps": ["Very Low", "Low", "Normal"], "default": 2, "floor": 1,
+     "shows": 2, "cost": 1, "restart": true},
+    {"id": "foveated", "label": "Foveated rendering (sharp middle, softer edges)", "kind": "ini",
+     "file": "{exe_dir}\\portable\\BetterVR_settings.ini", "section": "[BetterVR][Settings]", "key": "FoveatedRendering",
+     "steps": ["ON", "OFF"], "default": 0, "floor": 0, "shows": 1, "cost": 2, "restart": true}
+  ]
+}
