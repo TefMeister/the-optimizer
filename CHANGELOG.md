@@ -22,7 +22,7 @@
 - The frame meter counts the calls it sees (waits, frames handed in, sessions) in its live file, keeps a frame from the
   waits when no hand-in is seen, and keeps writing while any session is open. With them it found why Silent Hill 2's
   headset runs sometimes measured nothing: another OpenXR layer on the PC (Window View) took the frame calls past it
-  after the first frame (1 wait, 0 frames; 9 of 9 starts clean with that layer off).
+  after the first frame (1 wait, 0 frames; 12 of 12 starts clean with that layer off, 8 start crashes in 19 with it on).
 - The window no longer counts a spot not yet visited as done. The first run is written down in
   `docs/first-run-silent-hill-2-2026-11-21.md`.
 
