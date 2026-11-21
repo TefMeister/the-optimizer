@@ -366,6 +366,32 @@ def markers_written_per_look():
           and all("rt=" in r[3] for r in rows), "markers_written_per_look: one marker file, a line per look with the settings")
 
 
+def live_change_away_from_tuning_spot_reaches_it_first():
+    """Found by the dry run (2026-11-21): after the visits the game stands at the LAST spot, not the tuning spot, so a
+    live change must be followed by going to the tuning spot, never by a measure where the game happens to be."""
+    from engine import tour as TR
+    smooth, heavy = _recs()
+    TR.begin("t6l", _pack("t6l", 2), build="b1")
+    seen = drive("t6l", lambda spot, lv: (heavy, {"load_avg": 97}) if spot == "slot0" else (smooth, {"load_avg": 60}),
+                 stop_at={"set"})
+    TR.changed("t6l", seen[-1]["knob"], seen[-1]["to"])
+    st = TR.next_step("t6l")
+    check(st["do"] == "reach" and st["spot"] == "slot0" and st["restart"],
+          "live_change_away_from_tuning_spot_reaches_it_first: back to the tuning spot (a relaunch), then measure")
+    TR.arrived("t6l")
+    TR.settled("t6l")
+    smooth_rows, _ = _recs()
+    TR.measured("t6l", smooth_rows, {"load_avg": 60})
+    st = TR.next_step("t6l")
+    if st["do"] == "set":
+        TR.changed("t6l", st["knob"], st["to"])
+        st = TR.next_step("t6l")
+        check(st["do"] == "settle_wait" and st["spot"] == "slot0",
+              "and a live change made while standing at the tuning spot is measured right there")
+    else:
+        check(False, f"expected a second change, got {st['do']}")
+
+
 # ---- Task 7: apply, the result, undo ---------------------------------------------------------------------------
 def _finished(game, nslots=1, judge=None):
     """A tour driven to 'applying', with one setting the game keeps in a file (dlss) and two live-only ones."""
@@ -464,7 +490,7 @@ TESTS = [look_writes_twelve_heads, measure_window_from_a_recording, find_lists_e
          all_processor_bound_changes_nothing, short_measure_is_not_ranked, crash_retry_then_unreachable,
          died_twice_is_unsafe, final_lap_two_rounds_max, tour_resumes_mid_spot, strike_mid_tour,
          cost_below_noise_subtracts_nothing, cost_above_noise_is_subtracted, restart_only_settings_come_last,
-         markers_written_per_look, apply_reports_live_only, apply_refused_while_running,
+         markers_written_per_look, live_change_away_from_tuning_spot_reaches_it_first, apply_reports_live_only, apply_refused_while_running,
          apply_reports_undone_setting, result_lists_everything, undo_restores_every_file]
 
 

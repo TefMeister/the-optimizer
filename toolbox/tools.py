@@ -144,6 +144,8 @@ class Box:
         back = self._after_quit() if ok else None
         if not ok:
             raise Refused(said)
+        if self._tour():
+            T.left(self.game)
         return {"closed": True, "say": said + (f"; {back}" if back else "")}
 
     def game_state(self):

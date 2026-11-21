@@ -1,0 +1,17 @@
+{
+  "claude-code": {
+    "label": "Claude Code",
+    "program": "claude",
+    "cmd": ["{program}", "-p", "--mcp-config", "{mcp_config}", "--strict-mcp-config", "--tools", "",
+            "--allowedTools", "{allow}", "--output-format", "stream-json", "--verbose",
+            "--setting-sources", "project", "--disable-slash-commands", "--no-session-persistence"],
+    "prompt_via": "stdin",
+    "tested": true,
+    "note": "Run in the background in the game's own agent folder. --tools \"\" takes every built-in tool away (no shell, no files, no web); --strict-mcp-config and --allowedTools leave it only The Optimizer's toolbox and the game's connector. The run uses your own Claude account."
+  },
+  "other": {
+    "label": "other MCP agents (untested)",
+    "tested": false,
+    "note": "Any AI agent that runs on this PC can do the job if it has: (1) MCP servers over stdio (it is given runner/<game>/agent/mcp.json: the toolbox and the game's connector); (2) a mode that runs on its own from a prompt, with no one answering questions (the prompt is job/job.md); (3) a way to allow only those MCP tools and nothing else (no shell, no file writing). Not tried: The Optimizer is built and tested with Claude Code only. Add an entry here with its command line in the same shape as claude-code's."
+  }
+}

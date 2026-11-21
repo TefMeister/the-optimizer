@@ -79,7 +79,7 @@ def begin(game, pack, build=None, headset=False, exe=None):
             "knobs": knobs, "levels": levels, "start": dict(levels), "ceilings": {}, "live_read": False,
             "phase": "visiting", "round": 0, "lap_done": [], "at": None, "step": "reach", "spots": {},
             "tuning_spot": None, "processor": [], "tune_verdict": None, "pending": None, "revert": None,
-            "need_restart": False, "steps": 0, "short_tries": 0, "changes": [],
+            "need_restart": False, "here": None, "steps": 0, "short_tries": 0, "changes": [],
             "connector_ms": cost.get("ms") if same else None, "connector_say": cost.get("say") if same else None,
             "stamp": time.strftime("%Y-%m-%d_%H-%M-%S"), "stop_why": None}
     save(game, tour)
@@ -220,6 +220,7 @@ def arrived(game, label=None):
                     tour["levels"][k["id"]] = tour["start"][k["id"]] = i
         tour["live_read"] = True
     tour["need_restart"] = False
+    tour["here"] = tour["at"]                          # where the game now stands
     tour["step"] = "settle"
     save(game, tour)
 
@@ -290,8 +291,16 @@ def _tuned_result(tour, v):
         tour["tune_verdict"] = {"result": "holds", "bound": None, "room": True}    # it held before the raise
 
 
+def left(game):
+    """The game was closed (quit_game): it stands nowhere now."""
+    tour = load(game)
+    tour["here"] = None
+    save(game, tour)
+
+
 def crashed(game):
     tour = load(game)
+    tour["here"] = None
     e = _entry(tour, tour["at"])
     e["crashes"] += 1
     if e["crashes"] > C.SPOT_CRASH_RETRIES:
@@ -304,6 +313,7 @@ def crashed(game):
 
 def died(game):
     tour = load(game)
+    tour["here"] = None
     e = _entry(tour, tour["at"])
     e["deaths"] += 1
     if e["deaths"] >= C.SPOT_DEATHS_UNSAFE:
@@ -342,8 +352,8 @@ def changed(game, knob_id, to):
     tour["changes"].append({"knob": knob_id, "from": frm, "to": i, "dir": tour["pending"]["dir"]})
     tour["steps"] += 1
     tour["at"] = tour["tuning_spot"]
-    if not K.live_ok(k) or tour["need_restart"]:
-        tour["need_restart"], tour["step"] = True, "reach"
+    if not K.live_ok(k) or tour["need_restart"] or tour.get("here") != tour["tuning_spot"]:
+        tour["need_restart"], tour["step"] = True, "reach"     # the game is elsewhere (or must restart): go back there
     else:
         tour["step"] = "settle"
     save(game, tour)
