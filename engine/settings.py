@@ -34,6 +34,10 @@ LOOK_STEP_S = 2.5                # ... holding each for 2.5 s (30 s a spot: the 
 LOOK_HEIGHT_M = 1.7              # the pretend head stands at a grown-up's eye height
 WAIT_FOR_CSV_S = 5               # after a measuring window, how long to wait for the meter's file to show up
 HEAD_WRITE_TRIES = 5             # the simulator may be reading the head file just then: try again this many times
+SPOT_CRASH_RETRIES = 1           # a spot whose start crashes is tried once more, then listed as unreachable
+SPOT_DEATHS_UNSAFE = 2           # two deaths at one spot: unsafe, skipped and listed (god mode first, when there is one)
+FINAL_LAP_ROUNDS = 2             # the final lap over every spot runs at most twice (a failing spot re-tunes once)
+CONNECTOR_NOISE_MS = 0.2         # a connector costing less than this a frame is noise: nothing is subtracted
 
 
 def base_dir():
