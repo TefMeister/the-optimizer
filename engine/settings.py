@@ -31,7 +31,8 @@ NVSMI_EVERY_S = 1.0              # one graphics-card sample a second while measu
 NET_TIMEOUT_S = 3                # a live change sent to a game's connector gives up after this
 NET_DOWN_HOLD_S = 5              # a connector that did not answer is not asked again for 5 s
 LOOK_STEPS = 12                  # the look-around turns a full circle in 12 steps of 30 degrees ...
-LOOK_STEP_S = 2.5                # ... holding each for 2.5 s (30 s a spot: the heaviest view is seldom straight ahead)
+LOOK_STEP_S = float(os.environ.get("OPTIMIZER_LOOK_STEP_S") or 2.5)   # ... 2.5 s each (30 s a spot: the heaviest
+#                                  view is seldom straight ahead; the dry run shortens it)
 LOOK_HEIGHT_M = 1.7              # the pretend head stands at a grown-up's eye height
 WAIT_FOR_CSV_S = 5               # after a measuring window, how long to wait for the meter's file to show up
 HEAD_WRITE_TRIES = 5             # the simulator may be reading the head file just then: try again this many times
@@ -39,11 +40,27 @@ SPOT_CRASH_RETRIES = 1           # a spot whose start crashes is tried once more
 SPOT_DEATHS_UNSAFE = 2           # two deaths at one spot: unsafe, skipped and listed (god mode first, when there is one)
 FINAL_LAP_ROUNDS = 2             # the final lap over every spot runs at most twice (a failing spot re-tunes once)
 CONNECTOR_NOISE_MS = 0.2         # a connector costing less than this a frame is noise: nothing is subtracted
+QUIT_WAIT_S = float(os.environ.get("OPTIMIZER_QUIT_WAIT_S") or 90)   # a game's own quit gets this long (SH2: ~10 s)
+LAUNCH_WAIT_S = 180              # a launch that shows no running game after this long counts as a failed launch
+PREFLIGHT_FRESH_S = 3600         # a launch needs a preflight that passed within the last hour
+CLAIM_FRESH_S = 12 * 3600        # a Lanes session's claim on a game counts for 12 hours (Lanes' own rule)
+SETTLE_MAX_S = 60                # waiting for a spot to settle gives up after a minute
 
 
 def base_dir():
     return os.environ.get("OPTIMIZER_DIR") or os.path.join(
         os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "TheOptimizer")
+
+
+def helpers_dir():
+    """Menu-o-matiC and State-o-matiC: OPTIMIZER_HELPERS, else Lanes' copy when Lanes is installed, else our own
+    copy that install.ps1 fetches (%LOCALAPPDATA%/TheOptimizer/helpers)."""
+    if os.environ.get("OPTIMIZER_HELPERS"):
+        return os.environ["OPTIMIZER_HELPERS"]
+    import glob
+    lanes = sorted(glob.glob(os.path.join(os.path.expanduser("~"), ".claude", "plugins", "cache", "lanes-plugin",
+                                          "lanes", "*", "tools", "menu-o-matic")))
+    return lanes[-1] if lanes else os.path.join(base_dir(), "helpers")
 
 
 def sim_data_dir():
@@ -142,6 +159,8 @@ def game_running(exe):
     fake = os.environ.get("OPTIMIZER_FAKE_RUNNING")
     if fake is not None and fake != "":
         return fake == "1"
+    if os.environ.get("OPTIMIZER_RUNNING_FILE"):             # the pretend game keeps this file while it runs
+        return os.path.isfile(os.environ["OPTIMIZER_RUNNING_FILE"])
     name = os.path.basename(exe or "")
     if not name:
         return False

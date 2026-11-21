@@ -193,9 +193,10 @@ def presentmon_rows(exe_name, seconds):
 
 
 # ---- one measuring window, for everything -----------------------------------------------------------------------
-def measure_window(exe, seconds, flat=False, csv=None):
+def measure_window(exe, seconds, flat=False, csv=None, during=None):
     """(rows, gpu, why) for the next `seconds` of play: the frame meter's rows (or PresentMon's for a flat game, or a
-    recording's last `seconds` when csv is given), the card's numbers, and why nothing was measured (None when fine)."""
+    recording's last `seconds` when csv is given), the card's numbers, and why nothing was measured (None when fine).
+    With `during` (a function that returns the seconds it took, such as the look-around) the window is as long as it."""
     if csv:
         return last_seconds(read_meter_csv(csv), seconds), None, None
     stem = os.path.splitext(os.path.basename(exe))[0]
@@ -204,7 +205,10 @@ def measure_window(exe, seconds, flat=False, csv=None):
         rows, why = presentmon_rows(os.path.basename(exe), seconds)
         return rows or [], sampler.stop(), why
     t0 = time.time()
-    time.sleep(seconds)
+    if during:
+        seconds = during()
+    else:
+        time.sleep(seconds)
     gpu = sampler.stop()
     for _ in range(C.WAIT_FOR_CSV_S):
         files = [f for f in meter_csvs(stem) if os.path.getmtime(f) >= t0]

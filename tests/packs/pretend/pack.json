@@ -1,0 +1,32 @@
+{
+  "name": "pretend",
+  "label": "The pretend game (tests and the dry run only)",
+  "notes": "Not a game: tests/packs/pretend/pretend_game.py, copied into a test folder (OPTIMIZER_PRETEND_HOME). It answers like a live connector and writes made-up frame-meter rows.",
+  "exe": "pretend_game.exe",
+  "find_exe": {"globs": ["%OPTIMIZER_PRETEND_HOME%\\pretend_game.exe"]},
+  "launch": {"program": "pretend_game.py", "find": ["%OPTIMIZER_PRETEND_HOME%\\pretend_game.py"], "args": [],
+             "args_headset": [], "env": {}},
+  "vr_files": ["vr\\backend.dll"],
+  "to_play": [{"do": "wait", "for": "running", "seconds": 10, "say": "the pretend game is in play as soon as it runs"}],
+  "quit": {"connector_console": "quit"},
+  "settings": {
+    "label": "the pretend game's two settings",
+    "knobs": [
+      {"id": "heavy", "label": "Pretend heavy effect", "kind": "live_cvar", "key": "r.Pretend.Heavy",
+       "steps": ["0", "1"], "default": 1, "floor": 0, "shows": 1, "cost": 3, "live": "uevr_http", "live_safe": true,
+       "restart": false, "keep": null},
+      {"id": "shadow", "label": "Pretend shadows", "kind": "ini", "file": "%OPTIMIZER_PRETEND_HOME%\\settings.ini",
+       "key": "Shadow", "steps": ["0", "1", "2"], "default": 1, "floor": 0, "shows": 2, "cost": 1, "restart": true,
+       "keep": "%OPTIMIZER_PRETEND_HOME%\\settings.ini"}
+    ]
+  },
+  "spots_find": {"save_glob": "%OPTIMIZER_PRETEND_SAVES%\\SaveGameData_*.sav", "slot_re": "SaveGameData_(\\d+)\\.sav$",
+                 "reach": "save_slot"},
+  "swap_tool": "saveswap.py",
+  "godmode": null,
+  "connector": {"name": "the pretend game's own connector", "mcp_name": "pretend",
+                "check_url": "%OPTIMIZER_UEVR_BASE%/api/console/cvar?name=r.Pretend.Heavy", "get": "tests/packs/pretend"},
+  "crash_signs": {"log": "%OPTIMIZER_PRETEND_HOME%\\log.txt", "lines": ["PRETEND CRASH"]},
+  "picture": {"w": 1000, "h": 1000},
+  "settle": 0
+}
