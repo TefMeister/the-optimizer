@@ -74,12 +74,16 @@ def conf(key, default=None):
 
 
 # ---- profiles --------------------------------------------------------------------------------------------------
+def profiles_dir():
+    return os.environ.get("OPTIMIZER_PROFILES_DIR") or PROFILES_DIR
+
+
 def profile_names():
-    return sorted(n[:-5] for n in os.listdir(PROFILES_DIR) if n.endswith(".json"))
+    return sorted(n[:-5] for n in os.listdir(profiles_dir()) if n.endswith(".json"))
 
 
 def load_profile(name):
-    path = os.path.join(PROFILES_DIR, name + ".json")
+    path = os.path.join(profiles_dir(), name + ".json")
     if not os.path.isfile(path):
         raise SystemExit(f"optimizer: no profile '{name}' (there are: {', '.join(profile_names())})")
     with open(path, encoding="utf-8") as f:
@@ -90,7 +94,8 @@ def load_profile(name):
     return p
 
 
-KINDS = ("ini", "json", "console_script", "ask")
+KINDS = ("ini", "json", "console_script", "ask", "gsa_option", "live_cvar")
+NO_FILE_KINDS = ("ask", "live_cvar")      # a menu setting, or a value that lives only in the running game
 
 
 def check_profile(p):
@@ -111,9 +116,26 @@ def check_profile(p):
         for field in ("shows", "cost"):
             if not 0 <= int(k.get(field, -1)) <= 3:
                 out.append(f"{kid}: {field} must be 0 (none) to 3 (a lot)")
-        if k.get("kind") != "ask" and not k.get("file"):
+        if k.get("kind") not in NO_FILE_KINDS and not k.get("file"):
             out.append(f"{kid}: a {k.get('kind')} setting needs its file")
     return out
+
+
+def game_running(exe):
+    """Is the game's program running? (tasklist; OPTIMIZER_FAKE_RUNNING=1|0 in tests)"""
+    fake = os.environ.get("OPTIMIZER_FAKE_RUNNING")
+    if fake is not None and fake != "":
+        return fake == "1"
+    name = os.path.basename(exe or "")
+    if not name:
+        return False
+    import subprocess
+    try:
+        out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}", "/NH", "/FO", "CSV"],
+                             capture_output=True, text=True, timeout=15).stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return f'"{name.lower()}"' in out.lower()
 
 
 def steam_path():

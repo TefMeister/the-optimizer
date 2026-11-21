@@ -63,7 +63,8 @@ def main():
     os.environ["APPDATA"] = os.path.join(t, "appdata")
     srv = HTTPServer(("127.0.0.1", 0), Fake)
     threading.Thread(target=srv.serve_forever, daemon=True).start()
-    os.environ["OPTIMIZER_UEVR_URL"] = f"http://127.0.0.1:{srv.server_port}/api/console/command"
+    os.environ["OPTIMIZER_UEVR_BASE"] = f"http://127.0.0.1:{srv.server_port}"
+    os.environ["OPTIMIZER_FAKE_RUNNING"] = "1"      # the pretend game counts as running: safe settings go live
     from engine import cli as tune
     from engine import settings as C
     from engine import decide as D
@@ -117,6 +118,8 @@ def main():
     code, out = run(tune, "next", "pretend-game")
     check("raised Picture sharpness (render resolution, %): 100 -> 110" in out,
           "holding with room: first up is what shows most for its cost (the sharpness)")
+    check("restart the game so it reads the change" in out,
+          "the sharpness is not safe to change live: it waits for a restart, and says so")
     code, out = run(tune, "measure", "pretend-game", "--csv", os.path.join(t, "h.csv"))
     check("did not hold: put back to 100" in out and "r.ScreenPercentage 100" in open(script).read(),
           "a raise that fails is put back at once")

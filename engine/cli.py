@@ -171,7 +171,7 @@ def cmd_meter(argv):
         return 0
     if sub == "on":
         if len(argv) < 2:
-            C.say("usage: cli.py meter on <the game's program>")
+            C.say("usage: python -m engine.cli meter on <the game's program>")
             return 2
         exe = argv[1]
         if _is_64(exe) is False:
@@ -180,7 +180,7 @@ def cmd_meter(argv):
             return 1
         dist = os.environ.get("OPTIMIZER_METER_DIST") or os.path.join(C.METER_SRC, "dist")
         if not all(os.path.isfile(os.path.join(dist, f)) for f in LAYER_FILES):
-            C.say("the meter is not built yet: cli.py meter build")
+            C.say("the meter is not built yet: python -m engine.cli meter build")
             return 1
         os.makedirs(C.layer_dir(), exist_ok=True)
         for f in LAYER_FILES:
@@ -212,7 +212,7 @@ def cmd_meter(argv):
             _reg("del", manifest)
         C.say(f"frame meter now measures: {', '.join(exes) or 'no game (unregistered)'}")
         return 0
-    C.say("usage: cli.py meter build|status|on <program>|off [<program>]")
+    C.say("usage: python -m engine.cli meter build|status|on <program>|off [<program>]")
     return 2
 
 
@@ -253,13 +253,16 @@ def game_of(state):
     return {"exe": state["exe"], "asked": state.get("asked", {}), "paths": state.get("paths", {})}
 
 
+FROM = {"live": "(read live)", "file": "(from the game's settings file)", "default": "(not set: the game's default)"}
+
+
 def cmd_start(argv):
     if not argv or argv[0].startswith("--"):
-        C.say("usage: cli.py start <game> --exe <program> [--profile <name>] [--target 72]")
+        C.say("usage: python -m engine.cli start <game> --exe <program> [--profile <name>] [--target 72]")
         return 2
     game, exe = argv[0], arg(argv, "--exe")
     if not exe:
-        C.say("cli.py start needs --exe <the game's program> (the meter and the profiles find things from it)")
+        C.say("python -m engine.cli start needs --exe <the game's program> (the meter and the profiles find things from it)")
         return 2
     profile = arg(argv, "--profile") or guess_profile(exe)
     target = float(arg(argv, "--target", C.DEFAULT_TARGET_FPS))
@@ -270,20 +273,17 @@ def cmd_start(argv):
         state["asked"][k.strip()] = v.strip()
     lines = [f"tuning {state['game']} with the '{profile}' profile, target {target:g} frames a second"]
     for k in knobs_for(state):
-        val = K.get_value(k, game_of(state))
+        val, src = K.start_value(k, game_of(state))
         i = K.step_index(k, val)
-        if i is None and "default" in k:
-            i = int(k["default"])
-            val = f"{k['steps'][i]} (not set: the game's default)"
         if i is None:
-            lines.append(f"   {k['label']}: not known yet ({val!r}): cli.py set {state['game']} {k['id']} <step>")
+            lines.append(f"   {k['label']}: not known yet ({val!r}): python -m engine.cli set {state['game']} {k['id']} <step>")
             continue
         state["levels"][k["id"]] = state["start"][k["id"]] = i
-        lines.append(f"   {k['label']}: {k['steps'][i]}")
+        lines.append(f"   {k['label']}: {K.shown(k, k['steps'][i])} {FROM[src]}")
     C.note(state, "started")
     C.save_state(state)
     C.say(*lines, "next: play a busy stretch of the game and run, while playing: "
-                  f"cli.py measure {state['game']} --seconds 60")
+                  f"python -m engine.cli measure {state['game']} --seconds 60")
     return 0
 
 
@@ -306,7 +306,7 @@ def _measure_rows(state, argv, seconds):
             return R.last_seconds(R.read_meter_csv(files[-1]), seconds), gpu, None
         time.sleep(1)
     return [], gpu, (f"the frame meter wrote nothing for {stem} during those {seconds:g} s: is the game in VR, and is "
-                     f"the meter on for it (cli.py meter status)?")
+                     f"the meter on for it (python -m engine.cli meter status)?")
 
 
 def cmd_measure(argv):
@@ -339,25 +339,25 @@ def cmd_measure(argv):
         state["pending"] = None
     C.save_state(state)
     if state["phase"] == "tuning":
-        C.say(f"next: cli.py next {state['game']}")
+        C.say(f"next: python -m engine.cli next {state['game']}")
     return 0
 
 
 def cmd_next(argv):
     state = C.load_state(argv[0])
     if state.get("pending"):
-        C.say(f"the last change ({state['pending']['knob']}) has not been measured yet: cli.py measure {state['game']}")
+        C.say(f"the last change ({state['pending']['knob']}) has not been measured yet: python -m engine.cli measure {state['game']}")
         return 1
     if state["phase"] != "tuning":
-        C.say(f"tuning is {state['phase']}: cli.py status {state['game']}")
+        C.say(f"tuning is {state['phase']}: python -m engine.cli status {state['game']}")
         return 0
     if "last" not in state:
-        C.say(f"nothing measured yet: cli.py measure {state['game']}")
+        C.say(f"nothing measured yet: python -m engine.cli measure {state['game']}")
         return 1
     if state["steps"] >= C.MAX_STEPS:
         state["phase"] = "stopped"
         C.save_state(state)
-        C.say(f"{C.MAX_STEPS} changes and no settling: stopped; cli.py status {state['game']} shows where it stands")
+        C.say(f"{C.MAX_STEPS} changes and no settling: stopped; python -m engine.cli status {state['game']} shows where it stands")
         return 1
     knobs = knobs_for(state)
     k, to, how = D.choose(knobs, state["levels"], state["ceilings"], state["last"]["verdict"])
@@ -375,7 +375,7 @@ def cmd_next(argv):
     frm = state["levels"][k["id"]]
     _, ask = K.set_value(k, k["steps"][to], game_of(state), state["game"])
     live_ok = False
-    if k.get("live"):
+    if k.get("live") and C.game_running(state["exe"]):
         live_ok, said = K.push_live(k, k["steps"][to])
         if not live_ok:
             C.say(f"(not changed live: {said})")
@@ -387,17 +387,17 @@ def cmd_next(argv):
     C.say(f"{'lowered' if how == 'lower' else 'raised'} {k['label']}: {k['steps'][frm]} -> {k['steps'][to]}")
     if ask:
         C.say(f"BY HAND: {ask}")
-    elif k.get("restart", True) and not live_ok:
+    elif not live_ok:
         C.say("restart the game so it reads the change, then play and measure again")
     else:
         C.say("changed in the running game: play on and measure again")
-    C.say(f"then: cli.py measure {state['game']} --seconds 60")
+    C.say(f"then: python -m engine.cli measure {state['game']} --seconds 60")
     return 0
 
 
 def cmd_set(argv):
     if len(argv) < 3:
-        C.say("usage: cli.py set <game> <knob> <step>")
+        C.say("usage: python -m engine.cli set <game> <knob> <step>")
         return 2
     state = C.load_state(argv[0])
     knobs = {k["id"]: k for k in knobs_for(state)}
@@ -440,9 +440,14 @@ def cmd_status(argv):
 def cmd_undo(argv):
     state = C.load_state(argv[0])
     lines = K.restore_all(state["game"])
-    for k in knobs_for(state):
-        if k.get("live") and k["id"] in state["start"]:
-            K.push_live(k, k["steps"][state["start"][k["id"]]])
+    running = C.game_running(state["exe"])
+    if running:
+        lines.append("the game is running: nothing was sent to it live; restart the game so it starts from the "
+                     "settings put back")
+    else:
+        for k in knobs_for(state):
+            if K.live_ok(k) and k["id"] in state["start"]:
+                K.push_live(k, k["steps"][state["start"][k["id"]]])
     state["levels"] = dict(state["start"])
     state["phase"], state["pending"] = "undone", None
     C.note(state, "undone")
@@ -469,10 +474,10 @@ def main(argv):
                 "undo": cmd_undo}
     if cmd in per_game:
         if not rest:
-            C.say(f"usage: cli.py {cmd} <game> ...")
+            C.say(f"usage: python -m engine.cli {cmd} <game> ...")
             return 2
         return per_game[cmd](rest)
-    C.say(f"optimizer: no command '{cmd}' (cli.py help)")
+    C.say(f"optimizer: no command '{cmd}' (python -m engine.cli help)")
     return 2
 
 
