@@ -156,6 +156,18 @@ def main():
           "undo_no_live_push_while_running: files back, nothing sent, restart said")
     os.environ["OPTIMIZER_FAKE_RUNNING"] = "0"
 
+    # a connector that does not answer is remembered for a moment (a refused call costs about 2 s on Windows)
+    import time
+    os.environ["OPTIMIZER_UEVR_BASE"] = down
+    K.live_value(RT)
+    t0 = time.time()
+    for _ in range(5):
+        K.live_value(RT)
+    check(time.time() - t0 < 1.0, "connector_down_remembered: five more reads right after a refusal take no time")
+    os.environ["OPTIMIZER_UEVR_BASE"] = up
+    LIVE["r.Lumen.Reflections.HardwareRayTracing"] = 0.0
+    check(K.live_value(RT) == "0", "connector_down_remembered: a different connector address is asked at once")
+
     srv.shutdown()
     print("fixes_test: " + ("all passed" if not fails else f"{fails} FAILED"))
     return 1 if fails else 0

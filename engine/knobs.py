@@ -25,6 +25,8 @@ import json
 import os
 import re
 import shutil
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -122,15 +124,24 @@ def _gsa_match(text, key):
     return None
 
 
+_DOWN = {}      # connector address -> until when it is taken as not answering (a refused call costs ~2 s on Windows)
+
+
 def live_value(knob):
     """The setting's value in the running game, through the connector; None when it does not answer."""
     if knob.get("live") != "uevr_http":
         return None
-    url = _base() + "/api/console/cvar?name=" + urllib.parse.quote(knob["key"])
+    base = _base()
+    if _DOWN.get(base, 0) > time.time():
+        return None
+    url = base + "/api/console/cvar?name=" + urllib.parse.quote(knob["key"])
     try:
         with urllib.request.urlopen(url, timeout=C.NET_TIMEOUT_S) as r:
             d = json.loads(r.read(2000).decode("utf-8", "replace"))
+    except urllib.error.HTTPError:
+        return None                      # it answered: it just does not know that setting
     except (OSError, ValueError):
+        _DOWN[base] = time.time() + C.NET_DOWN_HOLD_S
         return None
     for field in ("float", "value", "int", "string"):
         if isinstance(d, dict) and d.get(field) is not None:
