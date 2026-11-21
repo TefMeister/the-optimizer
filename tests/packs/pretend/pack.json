@@ -2,6 +2,7 @@
   "name": "pretend",
   "label": "The pretend game (tests and the dry run only)",
   "notes": "Not a game: tests/packs/pretend/pretend_game.py, copied into a test folder (OPTIMIZER_PRETEND_HOME). It answers like a live connector and writes made-up frame-meter rows.",
+  "lanes_prefix": "pretend-vr",
   "exe": "pretend_game.exe",
   "find_exe": {"globs": ["%OPTIMIZER_PRETEND_HOME%\\pretend_game.exe"]},
   "launch": {"program": "pretend_game.py", "find": ["%OPTIMIZER_PRETEND_HOME%\\pretend_game.py"], "args": [],

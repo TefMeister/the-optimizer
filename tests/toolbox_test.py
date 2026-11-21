@@ -160,6 +160,20 @@ def main():
     check(not err and not os.path.exists(env["OPTIMIZER_RUNNING_FILE"]) and "quit" in cmds,
           "quit_never_kills: the game quit through its own quit")
     check("taskkill" not in log.lower() and "terminate" not in log.lower(), "quit_never_kills: no kill was ever run")
+
+    # launch_refused_when_a_lanes_session_holds_it: Lanes' own claim (a LIVE line on the game's board, under the
+    # clone root lanes.conf names) counts as well as our own claim file
+    root = os.path.join(t, "lanes-root")
+    os.makedirs(os.path.join(root, "claude-memory", "status"))
+    with open(env["OPTIMIZER_LANES_CONF"], "w") as f:
+        f.write(f"root = {root}\n")
+    with open(os.path.join(root, "claude-memory", "status", "pretend-vr.md"), "w") as f:
+        f.write(f"# pretend\n\nLIVE: /lm {time.strftime('%Y-%m-%d %H:%M')} PC1\nOPEN (today):\n")
+    pre, _ = box.call("preflight")
+    res, err = box.call("launch_game")
+    check(err and "Lanes session" in res["say"] and not os.path.exists(env["OPTIMIZER_RUNNING_FILE"]),
+          "launch_refused_when_a_lanes_session_holds_it: a Lanes /lm on the game stops the launch")
+    os.remove(env["OPTIMIZER_LANES_CONF"])
     box.close()
 
     # stop_mid_swap_restores_first

@@ -2,6 +2,7 @@
   "name": "silent-hill-2",
   "label": "Silent Hill 2 (the remake, in VR with UEVR)",
   "notes": "From the Silent Hill 2 VR project's notes (2026-11-21 reader note and the control profile's KNOWN.md). Tefa's rules for this game: DLSS stays on, view distance is never lowered (no pop-in), the fog is left alone, the ray-tracing geometry switches stay as they are, r.ScreenPercentage is never changed live (each live change rebuilt DLSS, the event three crashes came after; SH2-019). Left out on purpose: every sg.* group (they do nothing here: the game sets its own values), view distance, the fog grid, the ray-tracing geometry switches, all ray tracing off (the light shows), the six values our plugin's tuning.cpp re-sets every 5 s (they would be fought), and r.ScreenPercentage until SH2-019 is settled.",
+  "lanes_prefix": "silent-hill-2-remake-vr",
   "exe": "SHProto-Win64-Shipping.exe",
   "find_exe": {"steam_app": 2124490, "steam_folder": "SILENT HILL 2",
                "rel": "SHProto\\Binaries\\Win64\\SHProto-Win64-Shipping.exe"},

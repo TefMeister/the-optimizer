@@ -58,7 +58,8 @@ def claimed_by(pack):
             return c.get("by") or "another session"
     except (OSError, ValueError):
         pass
-    mem, prefix = C.conf("claude_memory"), pack.get("lanes_prefix")
+    prefix = pack.get("lanes_prefix")
+    mem = C.conf("claude_memory") or (os.path.join(C.conf("root"), "claude-memory") if C.conf("root") else None)
     if mem and prefix:
         try:
             with open(os.path.join(mem, "status", prefix + ".md"), encoding="utf-8") as f:
