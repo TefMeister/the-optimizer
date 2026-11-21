@@ -34,6 +34,43 @@ protects your PC is inside those tools: they refuse what is not allowed.
 - **A game pack** for the game: one folder in `packs/` saying how to launch it, how to quit it, where its settings
   live and how to reach its spots. The first pack is **Silent Hill 2** (the remake, in UEVR).
 
+## Get it
+
+Download the zip from [Releases](https://github.com/TefMeister/the-optimizer/releases), unzip it, right-click
+`install.ps1` and choose **Run with PowerShell**. It checks Python, copies the app to your programs folder, fetches the
+two menu helpers it uses (from [Lanes](https://github.com/TefMeister/lanes-plugin), unless Lanes is already on your PC)
+and puts a **The Optimizer** icon on the desktop. No administrator rights are needed. Or build it yourself:
+`build.bat` (only the C# compiler that ships with Windows), `meter\build.bat` (Visual Studio Build Tools), then
+`install.ps1`.
+
+## Use
+
+1. Make sure the game's VR mod and its live connector are installed and work (for Silent Hill 2: the VR mod's own
+   launcher and [UEVR-MCP](https://github.com/elliotttate/uevr-mcp)), and that Steam is running.
+2. Open **The Optimizer**, pick the game and the AI, press **Start**, and walk away. The middle line says where the run
+   is (which spot, what it is doing). The run takes a while: every spot is visited, looked around at and measured, and
+   every change is tested.
+3. When it is done, the result is in the window (and in `result.txt` in the game's folder under
+   `%LOCALAPPDATA%\TheOptimizer`). **Undo** puts every file it changed back as it was. **Stop** at any time closes the
+   game by its own quit and puts your saves back.
+
+Tick **I'll wear the headset** to run with the real headset instead of the pretend one.
+
+## How it is built
+
+| Part | What it is |
+| --- | --- |
+| `app/` | the window (C#) |
+| `job/job.md` | the whole job in plain steps, the AI's only instructions |
+| `toolbox/` | an MCP server: one tool per step, and every safety rule inside the tools |
+| `engine/` | the measuring and tuning (one change per test, the verdicts, the ranking, the tour) |
+| `packs/` | one folder per game: how to launch, play, quit and tune it |
+| `meter/` | the frame meter: an OpenXR layer that only writes each frame's times down |
+| `runner/` | starts the AI with only the toolbox and the game's connector (`agents.json` says how, per AI) |
+
+Tests: `python tests/<name>_test.py` for each part, `tests\app_test.ps1` for the window, and `tests/dry_run.py`, a
+whole run by Claude Code against a pretend game (it spends a few tokens).
+
 ## Credits
 
 - [OpenXR Simulator](https://github.com/elliotttate/OpenXR-Simulator) by elliotttate, from webhead2oo9's

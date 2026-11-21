@@ -3,3 +3,4 @@ __pycache__/
 meter/build/
 meter/dist/
 app/bin/
+dist/

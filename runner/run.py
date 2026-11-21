@@ -5,6 +5,7 @@
     python runner/run.py <pack> --show                                 print the command it would run, start nothing
     python runner/run.py <pack> --stop                                 the Stop button: end the agent, then quit the
                                                                        game by its own quit and put every save back
+    python runner/run.py <pack> --undo                                 the Undo button: every file put back as it was
 
 It writes <OPTIMIZER_DIR>/<game>/agent/mcp.json (the two servers), starts the agent in that folder with job/job.md as
 its prompt, keeps everything the agent says in agent.log, and records the agent's process in run.json (the window
@@ -130,6 +131,11 @@ def main(argv):
     agent = argv[argv.index("--agent") + 1] if "--agent" in argv else "claude-code"
     if "--stop" in argv:
         return stop(pack)
+    if "--undo" in argv:
+        from engine import finish as F
+        for line in F.undo(pack):
+            print(line)
+        return 0
     if "--show" in argv:
         cmd, _ = build(pack, agent, "--headset" in argv)
         print(" ".join(f'"{c}"' if (" " in c or not c) else c for c in cmd))
