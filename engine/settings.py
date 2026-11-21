@@ -29,6 +29,7 @@ MIN_FRAMES = 300                 # fewer frames than this (about 4 s at 72 Hz) i
 MAX_STEPS = 40                   # a tuning that has not settled after this many changes stops and says so
 NVSMI_EVERY_S = 1.0              # one graphics-card sample a second while measuring
 NET_TIMEOUT_S = 3                # a live change sent to a game's connector gives up after this
+SETTLE_FPS_SHARE = 0.05         # settled: the live frame rate moves by at most 5% between readings
 NET_DOWN_HOLD_S = 5              # a connector that did not answer is not asked again for 5 s
 LOOK_STEPS = 12                  # the look-around turns a full circle in 12 steps of 30 degrees ...
 LOOK_STEP_S = float(os.environ.get("OPTIMIZER_LOOK_STEP_S") or 2.5)   # ... 2.5 s each (30 s a spot: the heaviest

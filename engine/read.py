@@ -31,8 +31,16 @@ def meter_csvs(exe_stem=None):
 
 def read_meter_csv(path):
     rows = []
-    with open(path, encoding="utf-8", errors="replace") as f:
-        lines = [ln for ln in f if not ln.startswith("#")]
+    lines = None
+    for _ in range(5):                 # a meter older than 0.1.1 locked its file while the game ran
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                lines = [ln for ln in f if not ln.startswith("#")]
+            break
+        except PermissionError:
+            time.sleep(0.2)
+    if lines is None:
+        return rows
     for r in csv.DictReader(lines):
         try:
             rows.append({k: float(v) for k, v in r.items() if k})

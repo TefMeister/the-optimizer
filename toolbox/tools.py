@@ -210,16 +210,23 @@ class Box:
         tour = T.load(self.game)
         stem = os.path.splitext(os.path.basename(self.exe))[0]
         t0, need = time.time(), float(tour.get("settle") or 0)
-        steady_since = None
+        # Steady = the frame rate stopped moving (each live reading within SETTLE_FPS_SHARE of the one before), not
+        # "no missed frames": the meter counts a miss against the headset's own period, so on a 90 Hz pretend headset
+        # a game at 65 a second misses every few frames for good and the old test always ran the full SETTLE_MAX_S
+        # (found 2026-11-21, the first SH2 run).
+        steady_since, last_fps = None, None
         while time.time() - t0 < C.SETTLE_MAX_S:
             v = R.read_live(stem)
             fresh = v is not None and v.get("_age_s", 99) < 3
-            if not fresh or v.get("missed", 0) == 0:
+            fps = v.get("fps") if fresh else None
+            if fps and last_fps and abs(fps - last_fps) <= C.SETTLE_FPS_SHARE * last_fps:
                 steady_since = steady_since or time.time()
                 if time.time() - steady_since >= need:
                     break
-            else:
+            elif fps:
                 steady_since = None
+            if fps:
+                last_fps = fps
             time.sleep(0.25)
         T.settled(self.game)
         return {"say": f"steady after {time.time() - t0:.0f} s"}
@@ -327,6 +334,18 @@ class Box:
         write_progress(self, doing)
         return {"say": "noted"}
 
+    def wait(self, seconds=5):
+        """A plain pause while the game loads: the AI has no clock of its own (added 2026-11-21, the first SH2 run:
+        the pack's to_play waits up to two minutes, which without this meant calling the connector over and over)."""
+        try:
+            s = float(seconds)
+        except (TypeError, ValueError):
+            raise Refused("seconds must be a number")
+        s = max(1.0, min(s, WAIT_MAX_S))
+        time.sleep(s)
+        return {"say": f"waited {s:g} s; the game is {'running' if self._running() else 'NOT running'}",
+                "running": self._running()}
+
 
 def write_progress(box, doing="", last=""):
     """What the window shows: <game>/progress.json, rewritten after every tool call."""
@@ -346,6 +365,7 @@ def write_progress(box, doing="", last=""):
 
 
 NO_ARGS = {"type": "object", "properties": {}}
+WAIT_MAX_S = 30                  # one wait call; a longer load is several calls with a check between
 TOOLS = {
     "preflight": ("Check that everything is in place before a launch (the pack, the VR files, the meter, the claim).",
                   {"type": "object", "properties": {"headset": {"type": "boolean"}}}),
@@ -373,6 +393,8 @@ TOOLS = {
     "result": ("Write the result for the person (result.txt) and return it.", NO_ARGS),
     "stop": ("Stop the run: quit the game by its own quit, put every save back, write the result.",
              {"type": "object", "properties": {"why": {"type": "string"}}}),
+    "wait": ("Pause for a few seconds (at most 30) while the game loads, then say whether it still runs.",
+             {"type": "object", "properties": {"seconds": {"type": "number"}}, "required": ["seconds"]}),
     "progress": ("Tell the window what you are doing, in a few plain words.",
                  {"type": "object", "properties": {"doing": {"type": "string"}}}),
 }

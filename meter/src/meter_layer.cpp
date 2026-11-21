@@ -11,6 +11,7 @@
 
 #include <openxr/openxr_loader_negotiation.h>
 #include <windows.h>
+#include <share.h>
 
 #include <atomic>
 #include <cstring>
@@ -87,8 +88,9 @@ void write_live(const std::string& path) {
 
 // One writer thread per session: the frame calls only push rows into memory, the disk is touched here.
 void writer_loop(std::string csv_path, std::string live_path) {
-    FILE* f = nullptr;
-    if (fopen_s(&f, csv_path.c_str(), "wb") != 0) f = nullptr;
+    // _fsopen with _SH_DENYWR, not fopen_s: fopen_s opens the file for this process alone, so the toolbox could not
+    // read the frames while the game ran, which is exactly when it measures (found 2026-11-21, the first SH2 run).
+    FILE* f = _fsopen(csv_path.c_str(), "wb", _SH_DENYWR);
     if (f) {
         char exe[MAX_PATH] = {};
         GetModuleFileNameA(nullptr, exe, MAX_PATH);

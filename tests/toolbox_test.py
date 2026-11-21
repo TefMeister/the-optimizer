@@ -18,7 +18,7 @@ SERVER = os.path.join(ROOT, "toolbox", "server.py")
 fails = 0
 EXPECTED = {"preflight", "launch_game", "quit_game", "game_state", "spots_find", "next_step", "spot_reach",
             "spot_arrived", "settle_wait", "look_and_measure", "setting_set", "godmode", "report_crash",
-            "report_death", "connector_cost", "apply_all", "result", "stop", "progress"}
+            "report_death", "connector_cost", "apply_all", "result", "stop", "progress", "wait"}
 
 
 def check(ok, what):

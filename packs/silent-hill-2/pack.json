@@ -1,69 +1,226 @@
 {
-  "name": "silent-hill-2",
-  "label": "Silent Hill 2 (the remake, in VR with UEVR)",
-  "notes": "From the Silent Hill 2 VR project's notes (2026-11-21 reader note and the control profile's KNOWN.md). Tefa's rules for this game: DLSS stays on, view distance is never lowered (no pop-in), the fog is left alone, the ray-tracing geometry switches stay as they are, r.ScreenPercentage is never changed live (each live change rebuilt DLSS, the event three crashes came after; SH2-019). Left out on purpose: every sg.* group (they do nothing here: the game sets its own values), view distance, the fog grid, the ray-tracing geometry switches, all ray tracing off (the light shows), the six values our plugin's tuning.cpp re-sets every 5 s (they would be fought), and r.ScreenPercentage until SH2-019 is settled.",
-  "lanes_prefix": "silent-hill-2-remake-vr",
-  "exe": "SHProto-Win64-Shipping.exe",
-  "find_exe": {"steam_app": 2124490, "steam_folder": "SILENT HILL 2",
-               "rel": "SHProto\\Binaries\\Win64\\SHProto-Win64-Shipping.exe"},
-  "launch": {
-    "program": "SH2VR.exe",
-    "find": ["%LOCALAPPDATA%\\Programs\\SH2VR\\SH2VR.exe", "D:\\SH2 builds\\releases\\*\\SH2VR.exe",
-             "D:\\Visceral build versions\\*silent*hill*\\*\\SH2VR.exe"],
-    "args": ["play", "--sim", "--no-install"],
-    "args_headset": ["play", "--no-install"],
-    "env": {"SteamAppId": "2124490", "SteamGameId": "2124490"},
-    "say": "The Silent Hill 2 VR mod's own launcher (SH2VR.exe, in its package folder). Steam must be running. `play --sim` starts the game with the pretend headset and loads UEVR by itself."
-  },
-  "vr_files": ["uevr\\UEVRBackend.dll", "uevr\\openxr_loader.dll"],
-  "to_play": [
-    {"do": "wait", "for": "window", "seconds": 120, "say": "the game window (a shader compile can add a minute)"},
-    {"do": "key", "key": "Enter", "say": "past the content warning (PRESS ANY BUTTON TO CONTINUE)"},
-    {"do": "connector_call", "object": "main menu", "method": "ContinueGame", "args": {"Movie": null, "NonSkippableLen": 0},
-     "say": "Continue: loads the newest save slot (the swapped-in one on a save jump)"},
-    {"do": "wait", "for": "loaded", "seconds": 120, "say": "about 45 to 95 s of loading"},
-    {"do": "vr_trigger", "say": "past PRESS ANY BUTTON TO PLAY (Enter works there too)"}
+ "name": "silent-hill-2",
+ "label": "Silent Hill 2 (the remake, in VR with UEVR)",
+ "notes": "From the Silent Hill 2 VR project's notes (2026-11-21 reader note and the control profile's KNOWN.md). Tefa's rules for this game: DLSS stays on, view distance is never lowered (no pop-in), the fog is left alone, the ray-tracing geometry switches stay as they are, r.ScreenPercentage is never changed live (each live change rebuilt DLSS, the event three crashes came after; SH2-019). Left out on purpose: every sg.* group (they do nothing here: the game sets its own values), view distance, the fog grid, the ray-tracing geometry switches, all ray tracing off (the light shows), the six values our plugin's tuning.cpp re-sets every 5 s (they would be fought), and r.ScreenPercentage until SH2-019 is settled. Checked live 2026-11-21 (the first run): the console 'god' does nothing in this game (shipping build: no cheat manager, EnableCheats creates none; the character stays damageable), so godmode stays null. The line 'Scene state passed to FSceneView constructor is null' is also written in starts that do NOT crash, so it is not a crash sign; UEVR's '[Exception Handler]' line is. PRESS ANY BUTTON TO PLAY passes on a connector Enter (no VR trigger needed); the connector cannot pull a VR trigger (its vr_input only reads).",
+ "lanes_prefix": "silent-hill-2-remake-vr",
+ "exe": "SHProto-Win64-Shipping.exe",
+ "find_exe": {
+  "steam_app": 2124490,
+  "steam_folder": "SILENT HILL 2",
+  "rel": "SHProto\\Binaries\\Win64\\SHProto-Win64-Shipping.exe"
+ },
+ "launch": {
+  "program": "SH2VR.exe",
+  "find": [
+   "%LOCALAPPDATA%\\Programs\\SH2VR\\SH2VR.exe",
+   "D:\\SH2 builds\\releases\\*\\SH2VR.exe",
+   "D:\\Visceral build versions\\*silent*hill*\\*\\SH2VR.exe"
   ],
-  "quit": {"connector_console": "quit", "say": "the console's quit closes the game cleanly in about 10 s; the UEVR injector window stays and is closed after"},
-  "settings": {
-    "label": "Silent Hill 2 in UEVR: the live-safe levers only",
-    "knobs": [
-      {"id": "rt_reflections", "label": "Ray-traced reflections", "kind": "live_cvar",
-       "key": "r.Lumen.Reflections.HardwareRayTracing", "steps": ["0", "1"], "default": 1, "floor": 0,
-       "shows": 1, "cost": 3, "live": "uevr_http", "live_safe": true, "restart": false, "keep": null},
-      {"id": "shadow_res", "label": "Shadow sharpness (most)", "kind": "live_cvar", "key": "r.Shadow.MaxResolution",
-       "steps": ["1024", "1500"], "default": 1, "floor": 0, "shows": 1, "cost": 1, "live": "uevr_http",
-       "live_safe": true, "restart": false, "keep": null},
-      {"id": "ao", "label": "Ambient shadows in corners", "kind": "live_cvar", "key": "r.AmbientOcclusionLevels",
-       "steps": ["0", "-1"], "default": 1, "floor": 0, "shows": 1, "cost": 1, "live": "uevr_http", "live_safe": true,
-       "restart": false, "keep": null},
-      {"id": "local_exposure", "label": "Local brightness balance", "kind": "live_cvar", "key": "r.LocalExposure",
-       "steps": ["0", "1"], "default": 1, "floor": 0, "shows": 1, "cost": 1, "live": "uevr_http", "live_safe": true,
-       "restart": false, "keep": null},
-      {"id": "dlss_level", "label": "DLSS level", "kind": "gsa_option",
-       "file": "%LOCALAPPDATA%\\SilentHill2\\Saved\\Config\\Windows\\GameUserSettings.ini", "key": "Adv_DLSSQuality",
-       "steps": ["1", "2", "3"], "map": {"1": "Performance", "2": "Balanced", "3": "Quality"}, "floor": 0,
-       "shows": 2, "cost": 3, "restart": true, "game_owned": true,
-       "keep": "%LOCALAPPDATA%\\SilentHill2\\Saved\\Config\\Windows\\GameUserSettings.ini",
-       "note": "edit only with the game closed; never through the game's menu while playing (SH2-019)"},
-      {"id": "xr_scale", "label": "Headset picture size (UEVR)", "kind": "ini",
-       "file": "%APPDATA%\\UnrealVRMod\\SHProto-Win64-Shipping\\config.txt", "key": "OpenXR_ResolutionScale",
-       "steps": ["0.8", "0.9", "1.0"], "default": 2, "floor": 0, "shows": 3, "cost": 3, "restart": true,
-       "keep": "%APPDATA%\\UnrealVRMod\\SHProto-Win64-Shipping\\config.txt"}
-    ]
+  "args": [
+   "play",
+   "--sim",
+   "--no-install"
+  ],
+  "args_headset": [
+   "play",
+   "--no-install"
+  ],
+  "env": {
+   "SteamAppId": "2124490",
+   "SteamGameId": "2124490"
   },
-  "spots_find": {"save_glob": "%LOCALAPPDATA%\\SilentHill2\\Saved\\SaveGames\\*\\SaveGameData_*.sav",
-                 "slot_re": "SaveGameData_(\\d+)\\.sav$", "reach": "save_slot"},
-  "swap_tool": "saveswap.py",
-  "godmode": null,
-  "connector": {"name": "UEVR-MCP", "mcp_name": "uevr",
-                "mcp_command": "%LOCALAPPDATA%\\Programs\\uevr-mcp\\bin\\UevrMcpServer.exe",
-                "plugin": "uevr_mcp.dll",
-                "check_url": "http://127.0.0.1:8899/api/console/cvar?name=r.ScreenPercentage",
-                "get": "https://github.com/elliotttate/uevr-mcp/releases",
-                "say": "elliotttate's UEVR-MCP: its plugin in the UEVR profile's plugins folder, its server for the AI. Once measured at about 7 ms a frame, once at nothing: The Optimizer measures its cost itself."},
-  "crash_signs": {"log": "%APPDATA%\\UnrealVRMod\\SHProto-Win64-Shipping\\log.txt",
-                  "lines": ["Scene state passed to FSceneView constructor is null"]},
-  "picture": {"w": 2688, "h": 2880},
-  "settle": 5
+  "say": "The Silent Hill 2 VR mod's own launcher (SH2VR.exe, in its package folder). Steam must be running. `play --sim` starts the game with the pretend headset and loads UEVR by itself."
+ },
+ "vr_files": [
+  "uevr\\UEVRBackend.dll",
+  "uevr\\openxr_loader.dll"
+ ],
+ "to_play": [
+  {
+   "do": "wait",
+   "for": "main menu",
+   "seconds": 150,
+   "say": "the warning screen (a shader compile can add a minute): wait 20 s, then key Enter; check with uevr_search_objects query 'MainMenuWidget_BP_C /Engine/Transient' (it exists only once the warning has passed); if it is not there, wait 10 s and key Enter again (up to 12 times)"
+  },
+  {
+   "do": "connector_call",
+   "tool": "uevr_invoke_method",
+   "object": "MainMenuWidget_BP_C /Engine/Transient",
+   "method": "ContinueGame",
+   "args": {
+    "Movie": null,
+    "NonSkippableLen": 0
+   },
+   "say": "Continue: take the address uevr_search_objects gave and call uevr_invoke_method ContinueGame with these args; it loads the newest save slot (the swapped-in one)"
+  },
+  {
+   "do": "wait",
+   "for": "loaded",
+   "seconds": 120,
+   "say": "loading (45 to 95 s): wait 15 s at a time until uevr_get_player names a pawn of class SHCharacterPlay_BP_C"
+  },
+  {
+   "do": "key",
+   "key": "Enter",
+   "say": "past PRESS ANY BUTTON TO PLAY: wait 10 s after the pawn appears, key Enter, wait 5 s, key Enter once more (the prompt shows a few seconds after the pawn and a press before it is lost; an extra Enter in play does no harm)"
+  }
+ ],
+ "quit": {
+  "connector_console": "quit",
+  "say": "the console's quit closes the game cleanly in about 10 s; the UEVR injector window stays and is closed after"
+ },
+ "settings": {
+  "label": "Silent Hill 2 in UEVR: the live-safe levers only",
+  "knobs": [
+   {
+    "id": "rt_reflections",
+    "label": "Ray-traced reflections",
+    "kind": "live_cvar",
+    "key": "r.Lumen.Reflections.HardwareRayTracing",
+    "steps": [
+     "0",
+     "1"
+    ],
+    "default": 1,
+    "floor": 0,
+    "shows": 1,
+    "cost": 3,
+    "live": "uevr_http",
+    "live_safe": true,
+    "restart": false,
+    "keep": null
+   },
+   {
+    "id": "shadow_res",
+    "label": "Shadow sharpness (most)",
+    "kind": "live_cvar",
+    "key": "r.Shadow.MaxResolution",
+    "steps": [
+     "1024",
+     "1500"
+    ],
+    "default": 1,
+    "floor": 0,
+    "shows": 1,
+    "cost": 1,
+    "live": "uevr_http",
+    "live_safe": true,
+    "restart": false,
+    "keep": null
+   },
+   {
+    "id": "ao",
+    "label": "Ambient shadows in corners",
+    "kind": "live_cvar",
+    "key": "r.AmbientOcclusionLevels",
+    "steps": [
+     "0",
+     "-1"
+    ],
+    "default": 1,
+    "floor": 0,
+    "shows": 1,
+    "cost": 1,
+    "live": "uevr_http",
+    "live_safe": true,
+    "restart": false,
+    "keep": null
+   },
+   {
+    "id": "local_exposure",
+    "label": "Local brightness balance",
+    "kind": "live_cvar",
+    "key": "r.LocalExposure",
+    "steps": [
+     "0",
+     "1"
+    ],
+    "default": 1,
+    "floor": 0,
+    "shows": 1,
+    "cost": 1,
+    "live": "uevr_http",
+    "live_safe": true,
+    "restart": false,
+    "keep": null
+   },
+   {
+    "id": "dlss_level",
+    "label": "DLSS level",
+    "kind": "gsa_option",
+    "file": "%LOCALAPPDATA%\\SilentHill2\\Saved\\Config\\Windows\\GameUserSettings.ini",
+    "key": "Adv_DLSSQuality",
+    "steps": [
+     "1",
+     "2",
+     "3"
+    ],
+    "map": {
+     "1": "Performance",
+     "2": "Balanced",
+     "3": "Quality"
+    },
+    "floor": 0,
+    "shows": 2,
+    "cost": 3,
+    "restart": true,
+    "game_owned": true,
+    "keep": "%LOCALAPPDATA%\\SilentHill2\\Saved\\Config\\Windows\\GameUserSettings.ini",
+    "note": "edit only with the game closed; never through the game's menu while playing (SH2-019)"
+   },
+   {
+    "id": "xr_scale",
+    "label": "Headset picture size (UEVR)",
+    "kind": "ini",
+    "file": "%APPDATA%\\UnrealVRMod\\SHProto-Win64-Shipping\\config.txt",
+    "key": "OpenXR_ResolutionScale",
+    "steps": [
+     "0.8",
+     "0.9",
+     "1.0"
+    ],
+    "default": 2,
+    "floor": 0,
+    "shows": 3,
+    "cost": 3,
+    "restart": true,
+    "keep": "%APPDATA%\\UnrealVRMod\\SHProto-Win64-Shipping\\config.txt"
+   }
+  ]
+ },
+ "spots_find": {
+  "save_glob": "%LOCALAPPDATA%\\SilentHill2\\Saved\\SaveGames\\*\\SaveGameData_*.sav",
+  "slot_re": "SaveGameData_(\\d+)\\.sav$",
+  "reach": "save_slot"
+ },
+ "swap_tool": "saveswap.py",
+ "godmode": null,
+ "connector": {
+  "name": "UEVR-MCP",
+  "mcp_name": "uevr",
+  "mcp_command": "%LOCALAPPDATA%\\Programs\\uevr-mcp\\bin\\UevrMcpServer.exe",
+  "plugin": "uevr_mcp.dll",
+  "check_url": "http://127.0.0.1:8899/api/console/cvar?name=r.ScreenPercentage",
+  "get": "https://github.com/elliotttate/uevr-mcp/releases",
+  "say": "elliotttate's UEVR-MCP: its plugin in the UEVR profile's plugins folder, its server for the AI. The AI may use only the tools in allow_tools (find the menu, call Continue, press Enter, see the pawn). Once measured at about 7 ms a frame (the 1.0.0 plugin), the throttled build installed since: The Optimizer does not measure its cost yet.",
+  "allow_tools": [
+   "uevr_search_objects",
+   "uevr_invoke_method",
+   "uevr_input_key",
+   "uevr_get_player",
+   "uevr_get_status",
+   "uevr_is_ready"
+  ]
+ },
+ "crash_signs": {
+  "log": "%APPDATA%\\UnrealVRMod\\SHProto-Win64-Shipping\\log.txt",
+  "lines": [
+   "[Exception Handler]"
+  ]
+ },
+ "picture": {
+  "w": 2688,
+  "h": 2880
+ },
+ "settle": 5
 }

@@ -22,7 +22,7 @@ Call `next_step`. Its `do` says what to do; do exactly that, then call `next_ste
 
 | `do` | what you do |
 | --- | --- |
-| `reach` | If the game is running and `restart` is true, call `quit_game` first. Call `spot_reach`. If its `say` tells you to launch: call `launch_game` (with `headset` true only if this job says the person wears the headset). Then walk the `to_play` steps it gives you with the connector's tools (a key, a menu call, a wait, a VR trigger), checking `game_state` between steps. When the game is in play at the spot, call `spot_arrived`. |
+| `reach` | If the game is running and `restart` is true, call `quit_game` first. Call `spot_reach`. If its `say` tells you to launch: call `launch_game` (with `headset` true only if this job says the person wears the headset). Then walk the `to_play` steps it gives you with the connector's tools (a key, a menu call, a check), using `wait` for every pause (at most 30 s a call; a longer wait is several calls with the step's check between), and checking `game_state` between steps. When the game is in play at the spot, call `spot_arrived`. |
 | `settle_wait` | Call `settle_wait`. |
 | `godmode` | Call `godmode`. |
 | `look_and_measure` | Call `look_and_measure`. Do nothing in the game while it runs. |
@@ -54,6 +54,7 @@ puts every save back.
 ## 4. Never
 
 - Never change a setting except through `setting_set`, and only the one `next_step` named.
-- Never use the connector to change a setting, load a save, or open a level: the toolbox does that.
+- Never use the connector to change a setting, load a save, or open a level: the toolbox does that. The one exception
+  is the pack's own `to_play` steps (such as a menu's Continue): walk those exactly as written.
 - Never play the game, fight, or walk around: a spot is reached by the toolbox, not by playing.
 - Never close the game any way but `quit_game`.

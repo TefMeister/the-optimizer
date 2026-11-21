@@ -59,6 +59,8 @@ def claimed_by(pack):
     except (OSError, ValueError):
         pass
     prefix = pack.get("lanes_prefix")
+    if os.environ.get("OPTIMIZER_RUN_BY_LANES_SESSION") == prefix:
+        return None                    # the Lanes session holding the game started this run itself (a Tester job)
     mem = C.conf("claude_memory") or (os.path.join(C.conf("root"), "claude-memory") if C.conf("root") else None)
     if mem and prefix:
         try:

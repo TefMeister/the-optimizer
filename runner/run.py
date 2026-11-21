@@ -58,9 +58,11 @@ def write_mcp_config(pack):
 
 def allow_patterns(pack):
     out = ["mcp__optimizer__*"]
-    name = (pack.get("connector") or {}).get("mcp_name")
+    con = pack.get("connector") or {}
+    name = con.get("mcp_name")
     if name:
-        out.append(f"mcp__{name}__*")
+        only = con.get("allow_tools")      # the connector tools the way into play needs; none named = all of them
+        out += [f"mcp__{name}__{t}" for t in only] if only else [f"mcp__{name}__*"]
     return out
 
 
