@@ -34,9 +34,9 @@ def launcher(pack):
     """The launcher's full path, or None: the pack's search places, then beside the game, then inside the pack."""
     la = pack.get("launch") or {}
     for g in la.get("find") or []:
-        hits = sorted(glob.glob(_x(g)))
+        hits = glob.glob(_x(g))
         if hits:
-            return hits[0]
+            return max(hits, key=os.path.getmtime)     # several releases of a mod: the newest one
     exe = P.exe_path(pack)
     prog = la.get("program") or ""
     if exe and prog and os.path.isfile(os.path.join(os.path.dirname(exe), prog)):

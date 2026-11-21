@@ -8,7 +8,8 @@
                "rel": "SHProto\\Binaries\\Win64\\SHProto-Win64-Shipping.exe"},
   "launch": {
     "program": "SH2VR.exe",
-    "find": ["%LOCALAPPDATA%\\Programs\\SH2VR\\SH2VR.exe", "D:\\Visceral build versions\\*silent*hill*\\*\\SH2VR.exe"],
+    "find": ["%LOCALAPPDATA%\\Programs\\SH2VR\\SH2VR.exe", "D:\\SH2 builds\\releases\\*\\SH2VR.exe",
+             "D:\\Visceral build versions\\*silent*hill*\\*\\SH2VR.exe"],
     "args": ["play", "--sim", "--no-install"],
     "args_headset": ["play", "--no-install"],
     "env": {"SteamAppId": "2124490", "SteamGameId": "2124490"},

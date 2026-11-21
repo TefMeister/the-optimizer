@@ -65,6 +65,23 @@ def main():
     check(code == 0 and sh2_row and sh2_row[0]["label"] and "installed" in sh2_row[0] and sh2_row[0]["complete"],
           "packs --json lists each pack with its label, whether the game is on this PC, and whether it is complete")
 
+    # launcher_newest_release: with several releases of a mod's launcher on the PC, the newest one is used
+    import time
+    from toolbox import game as G
+    rel = os.path.join(t, "releases")
+    for v, age in (("Mod 0.1.0", 3000), ("Mod 0.1.2", 1000), ("Mod 0.1.1", 2000)):
+        os.makedirs(os.path.join(rel, v))
+        exe = os.path.join(rel, v, "Launch.exe")
+        open(exe, "w").close()
+        os.utime(exe, (time.time() - age, time.time() - age))
+    fake = {"name": "x", "launch": {"program": "Launch.exe", "find": [os.path.join(rel, "*", "Launch.exe")]}}
+    got = G.launcher(fake)
+    check(got and os.path.basename(os.path.dirname(got)) == "Mod 0.1.2",
+          f"launcher_newest_release: the newest release's launcher is used ({got})")
+    sh2_find = " ".join(sh2["launch"]["find"])
+    check("SH2 builds" in sh2_find and "releases" in sh2_find,
+          "the Silent Hill 2 pack also looks where the mod's releases are kept")
+
     print("pack_test: " + ("all passed" if not fails else f"{fails} FAILED"))
     return 1 if fails else 0
 
