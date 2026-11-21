@@ -8,6 +8,7 @@ the same day, without the part that changed settings while playing (Tefa: "pleas
 
     python -m engine.cli readers                     the measuring programs: which are on this PC, how to get the others
     python -m engine.cli profiles                    the game profiles (which settings each knows, how it reads them)
+    python -m engine.cli packs [--json]              the game packs: is the game on this PC, is the pack complete
     python -m engine.cli meter build|status          build the frame meter (Visual Studio Build Tools), or how it stands
     python -m engine.cli meter on <game program>     install the meter and switch it on for that game only
     python -m engine.cli meter off [<game program>]  switch it off for that game (no game: every game, and unregister)
@@ -24,6 +25,7 @@ the same day, without the part that changed settings while playing (Tefa: "pleas
 THE LOOP: start -> (play, measure, next) until "locked". Launching and closing the game is the toolbox's job.
 """
 import filecmp
+import json
 import os
 import shutil
 import struct
@@ -85,6 +87,20 @@ def cmd_profiles():
     return 0
 
 
+def cmd_packs(argv):
+    """The game packs, as the window lists them (--json), or in plain words."""
+    from engine import pack as P
+    rows = P.rows()
+    if "--json" in argv:
+        print(json.dumps(rows))
+        return 0
+    for r in rows:
+        here = "the game is on this PC" if r["installed"] else "the game is not found on this PC"
+        state = "complete" if r["complete"] else "incomplete: " + "; ".join(r["problems"])
+        C.say(f"{r['name']}: {r['label']} ({here}; the pack is {state})")
+    return 0
+
+
 # ---- the meter -------------------------------------------------------------------------------------------------
 def _fake_reg():
     return os.environ.get("OPTIMIZER_FAKEREG")
@@ -94,7 +110,6 @@ def _reg(action, name):
     """Our own registry value only: never anyone else's layer."""
     fake = _fake_reg()
     if fake:
-        import json
         vals = {}
         if os.path.isfile(fake):
             with open(fake, encoding="utf-8") as f:
@@ -468,6 +483,8 @@ def main(argv):
     simple = {"readers": cmd_readers, "profiles": cmd_profiles}
     if cmd in simple:
         return simple[cmd]()
+    if cmd == "packs":
+        return cmd_packs(rest)
     if cmd == "meter":
         return cmd_meter(rest)
     per_game = {"start": cmd_start, "measure": cmd_measure, "next": cmd_next, "set": cmd_set, "status": cmd_status,
