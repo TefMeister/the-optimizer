@@ -351,7 +351,7 @@ def write_progress(box, doing="", last=""):
     """What the window shows: <game>/progress.json, rewritten after every tool call."""
     tour = box._tour() or {}
     active = SP.active(box.game) if tour else []
-    done = [s["id"] for s in active if tour.get("spots", {}).get(s["id"], {}).get("status") != "todo"]
+    done = [s["id"] for s in active if tour.get("spots", {}).get(s["id"], {}).get("status", "todo") != "todo"]
     at = tour.get("at")
     d = {"game": box.game, "label": box.pack.get("label"), "phase": tour.get("phase", "starting"),
          "round": tour.get("round", 0), "at": at, "at_label": (SP.get(box.game, at) or {}).get("label") if at else None,
