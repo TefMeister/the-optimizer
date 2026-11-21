@@ -192,6 +192,29 @@ def presentmon_rows(exe_name, seconds):
     return rows, None
 
 
+# ---- one measuring window, for everything -----------------------------------------------------------------------
+def measure_window(exe, seconds, flat=False, csv=None):
+    """(rows, gpu, why) for the next `seconds` of play: the frame meter's rows (or PresentMon's for a flat game, or a
+    recording's last `seconds` when csv is given), the card's numbers, and why nothing was measured (None when fine)."""
+    if csv:
+        return last_seconds(read_meter_csv(csv), seconds), None, None
+    stem = os.path.splitext(os.path.basename(exe))[0]
+    sampler = GpuSampler().start()
+    if flat:
+        rows, why = presentmon_rows(os.path.basename(exe), seconds)
+        return rows or [], sampler.stop(), why
+    t0 = time.time()
+    time.sleep(seconds)
+    gpu = sampler.stop()
+    for _ in range(C.WAIT_FOR_CSV_S):
+        files = [f for f in meter_csvs(stem) if os.path.getmtime(f) >= t0]
+        if files:
+            return last_seconds(read_meter_csv(files[-1]), seconds), gpu, None
+        time.sleep(1)
+    return [], gpu, (f"the frame meter wrote nothing for {stem} during those {seconds:g} s: is the game in VR, and is "
+                     f"the meter on for it (python -m engine.cli meter status)?")
+
+
 # ---- what is on this PC ----------------------------------------------------------------------------------------
 def readers():
     """Every reader with whether it is here and how to get it. The ones marked 'ours' ship in Lanes."""

@@ -54,7 +54,6 @@ REG_KEY = r"Software\Khronos\OpenXR\1\ApiLayers\Implicit"
 LAYER_FILES = ("lanes_tune_meter.dll", "lanes_tune_meter.json")
 PE_OFFSET_AT = 0x3c
 MACHINE_64 = 0x8664
-WAIT_FOR_CSV_S = 5
 
 
 def arg(argv, name, default=None):
@@ -304,24 +303,9 @@ def cmd_start(argv):
 
 def _measure_rows(state, argv, seconds):
     csv_path = arg(argv, "--csv")
-    if csv_path:
-        rows = R.read_meter_csv(csv_path)
-        return (R.last_seconds(rows, seconds) if "--seconds" in argv else rows), None, None
-    stem = os.path.splitext(os.path.basename(state["exe"]))[0]
-    sampler = R.GpuSampler().start()
-    if "--flat" in argv:
-        rows, why = R.presentmon_rows(os.path.basename(state["exe"]), seconds)
-        return rows or [], sampler.stop(), why
-    t0 = time.time()
-    time.sleep(seconds)
-    gpu = sampler.stop()
-    for _ in range(WAIT_FOR_CSV_S):
-        files = [f for f in R.meter_csvs(stem) if os.path.getmtime(f) >= t0]
-        if files:
-            return R.last_seconds(R.read_meter_csv(files[-1]), seconds), gpu, None
-        time.sleep(1)
-    return [], gpu, (f"the frame meter wrote nothing for {stem} during those {seconds:g} s: is the game in VR, and is "
-                     f"the meter on for it (python -m engine.cli meter status)?")
+    if csv_path and "--seconds" not in argv:
+        return R.read_meter_csv(csv_path), None, None
+    return R.measure_window(state["exe"], seconds, flat="--flat" in argv, csv=csv_path)
 
 
 def cmd_measure(argv):

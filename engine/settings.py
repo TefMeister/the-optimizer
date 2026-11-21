@@ -29,11 +29,22 @@ MIN_FRAMES = 300                 # fewer frames than this (about 4 s at 72 Hz) i
 MAX_STEPS = 40                   # a tuning that has not settled after this many changes stops and says so
 NVSMI_EVERY_S = 1.0              # one graphics-card sample a second while measuring
 NET_TIMEOUT_S = 3                # a live change sent to a game's connector gives up after this
+LOOK_STEPS = 12                  # the look-around turns a full circle in 12 steps of 30 degrees ...
+LOOK_STEP_S = 2.5                # ... holding each for 2.5 s (30 s a spot: the heaviest view is seldom straight ahead)
+LOOK_HEIGHT_M = 1.7              # the pretend head stands at a grown-up's eye height
+WAIT_FOR_CSV_S = 5               # after a measuring window, how long to wait for the meter's file to show up
+HEAD_WRITE_TRIES = 5             # the simulator may be reading the head file just then: try again this many times
 
 
 def base_dir():
     return os.environ.get("OPTIMIZER_DIR") or os.path.join(
         os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "TheOptimizer")
+
+
+def sim_data_dir():
+    """The OpenXR Simulator's command folder (it reads head_pose_command.json from here)."""
+    return os.environ.get("OPTIMIZER_SIM_DATA") or os.path.join(
+        os.environ.get("LOCALAPPDATA") or os.path.expanduser("~"), "OpenXR-Simulator")
 
 
 def meter_dir():
