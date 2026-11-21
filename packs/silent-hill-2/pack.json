@@ -40,7 +40,7 @@
    "do": "wait",
    "for": "main menu",
    "seconds": 150,
-   "say": "the warning screen (a shader compile can add a minute): wait 20 s, then key Enter; check with uevr_search_objects query 'MainMenuWidget_BP_C /Engine/Transient' (it exists only once the warning has passed); if it is not there, wait 10 s and key Enter again (up to 12 times)"
+   "say": "the warning screen (a shader compile can add a minute): wait 20 s, then key Enter; after each Enter check BOTH uevr_search_objects query 'MainMenuWidget_BP_C /Engine/Transient' (the main menu: it exists only once the warning has passed) and uevr_get_player. If the player's pawn is SHCharacterPlay_BP_C, an Enter already chose CONTINUE on the main menu: skip the ContinueGame step, go to the PRESS ANY BUTTON TO PLAY step. If the menu exists, do the next step. Otherwise wait 10 s and key Enter again (up to 12 times). With the real headset the menu can come and go between two checks (seen 2026-11-21)."
   },
   {
    "do": "connector_call",
@@ -51,7 +51,7 @@
     "Movie": null,
     "NonSkippableLen": 0
    },
-   "say": "Continue: take the address uevr_search_objects gave and call uevr_invoke_method ContinueGame with these args; it loads the newest save slot (the swapped-in one)"
+   "say": "Continue (skip if the pawn already exists): take the address uevr_search_objects gave and call uevr_invoke_method ContinueGame with these args; it loads the save (the chosen slot, put over every slot by the toolbox)"
   },
   {
    "do": "wait",

@@ -17,6 +17,8 @@
   this game, so it stays without god mode.
 - Silent Hill 2's save swapper puts the chosen slot over every other slot, not only the newest: Continue follows the slot
   last used, so on the first run every spot loaded the same prison armory.
+- Silent Hill 2's way into play also checks for the character after each Enter: with the real headset the Enter presses
+  chose CONTINUE on the main menu before the AI saw the menu.
 - The window no longer counts a spot not yet visited as done. The first run is written down in
   `docs/first-run-silent-hill-2-2026-11-21.md`.
 

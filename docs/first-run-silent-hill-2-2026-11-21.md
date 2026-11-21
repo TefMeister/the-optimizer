@@ -42,3 +42,16 @@ nobody at the headset.
 - The connector's own cost is not measured.
 - The pretend headset draws 1280x1400 an eye and runs its own mirror: whether a spot is processor- or card-limited there
   says little about the real headset. The real test is a run with the headset.
+
+## The real headset, the same evening (connected, on the table, sensor taped)
+
+- Try 1: the game's occasional start crash, 12 s in (the headset was fine; the ~60 "Failed to initialize Framework" lines
+  at a headset start are a normal burst, not a sleeping headset).
+- Try 2: the Enter presses also chose CONTINUE on the main menu, so the AI never saw the menu and stopped cleanly. The
+  pack now checks for the character too.
+- Try 3: reached the town start in the headset (14.3 ms a frame by the mod's clock), but **the meter counted no frame**:
+  its live file shows the headset's 72 Hz (so its wait hook ran) and 0 frames, its frame file stayed empty; the tour
+  stopped cleanly. Tries 1 and 2 recorded every frame with the same meter. Cause unknown: the next job, with the game
+  running and the meter's hooks bisected (other OpenXR layers switched off one at a time by their disable variables).
+- Tefa watching the monitor during try 3: the game window showed the "compiling shaders" screen, flickering rapidly,
+  while the mod's log said the character was in the town.
