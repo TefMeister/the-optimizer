@@ -47,6 +47,16 @@ int main() {
     check(!exe_matches(s, "C:\\Other\\game.exe"), "another game is left alone");
     check(exe_matches(parse_settings("on=1\nexe=*"), "x:\\any.exe"), "exe = * means every game");
     check(parse_settings("exe = *").on == 0, "off unless on = 1");
+    // waits with no hand-in seen (2026-11-21, Silent Hill 2 with the real headset): each frame still gets a row from
+    // the wait-to-wait time, its work unknown
+    Meter w;
+    for (int i = 0; i < 10; i++) { w.wait_begin(i * 13.888889); w.wait_end(i * 13.888889 + 1.0, 13888889); }
+    const auto wr = w.take_rows();
+    check(wr.size() == 9 && std::fabs(wr[1].interval_ms - 13.888889) < 0.01 && wr[1].work_ms < 0,
+          "waits with no hand-in still give one row a frame, work unknown");
+    check(w.waits() == 10 && w.ends() == 0 && w.unended() == 9, "the counters say the hand-ins were not seen");
+    w.frame_end(500); w.frame_end(501);
+    check(w.ends() == 2 && w.orphan_ends() == 1, "a hand-in with no wait before it is counted apart");
     const std::string line = csv_line(rows.back());
     check(line.find(",1\n") != std::string::npos, "a missed row ends in 1");
     printf(fails ? "meter_test: %d FAILED\n" : "meter_test: all passed\n", fails);

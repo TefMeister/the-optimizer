@@ -29,6 +29,7 @@ PFN_xrEndFrame g_next_end = nullptr;
 PFN_xrCreateSession g_next_create_session = nullptr;
 PFN_xrDestroySession g_next_destroy_session = nullptr;
 bool g_enabled = false;
+std::atomic<int> g_sessions{0}, g_instances{0}, g_open_sessions{0};   // seen by this process (for the live file)
 tm_meter::Meter g_meter;
 std::string g_out_dir, g_exe_stem;
 std::thread g_writer;
@@ -80,7 +81,15 @@ void write_live(const std::string& path) {
     const std::string tmp = path + ".tmp";
     FILE* f = nullptr;
     if (fopen_s(&f, tmp.c_str(), "wb") != 0 || !f) return;
-    const std::string j = tm_meter::live_json(g_meter.live(), g_exe_stem.c_str(), double(time(nullptr)));
+    std::string j = tm_meter::live_json(g_meter.live(), g_exe_stem.c_str(), double(time(nullptr)));
+    char extra[200];   // why a meter might see no frames: the calls it saw, and the sessions and instances it saw
+    snprintf(extra, sizeof extra, ", \"waits\": %llu, \"ends\": %llu, \"orphan_ends\": %llu, \"unended\": %llu, "
+             "\"sessions\": %d, \"instances\": %d, \"pid\": %lu}\n",
+             (unsigned long long)g_meter.waits(), (unsigned long long)g_meter.ends(),
+             (unsigned long long)g_meter.orphan_ends(), (unsigned long long)g_meter.unended(), g_sessions.load(),
+             g_instances.load(), (unsigned long)GetCurrentProcessId());
+    const size_t close = j.rfind('}');
+    if (close != std::string::npos) j = j.substr(0, close) + extra;
     fwrite(j.data(), 1, j.size(), f);
     fclose(f);
     MoveFileExA(tmp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING);
@@ -147,12 +156,21 @@ XRAPI_ATTR XrResult XRAPI_CALL tm_xrEndFrame(XrSession s, const XrFrameEndInfo* 
 
 XRAPI_ATTR XrResult XRAPI_CALL tm_xrCreateSession(XrInstance inst, const XrSessionCreateInfo* info, XrSession* s) {
     const XrResult r = g_next_create_session(inst, info, s);
-    if (XR_SUCCEEDED(r)) start_writer();
+    if (XR_SUCCEEDED(r)) {
+        g_sessions++;
+        g_open_sessions++;
+        start_writer();
+    }
     return r;
 }
 
 XRAPI_ATTR XrResult XRAPI_CALL tm_xrDestroySession(XrSession s) {
-    stop_writer();
+    // Only when no session is left: a process can hold two (a game's own and a VR mod's), and the first one closing
+    // must not stop the measuring of the other.
+    if (--g_open_sessions <= 0) {
+        g_open_sessions = 0;
+        stop_writer();
+    }
     return g_next_destroy_session(s);
 }
 
@@ -189,6 +207,7 @@ XRAPI_ATTR XrResult XRAPI_CALL tm_xrCreateApiLayerInstance(const XrInstanceCreat
     GetModuleFileNameA(nullptr, exe, MAX_PATH);
     g_enabled = s.on >= 1 && tm_meter::exe_matches(s, exe);
     if (!g_enabled) return r;
+    g_instances++;
     get(*instance, "xrWaitFrame", g_next_wait);
     get(*instance, "xrEndFrame", g_next_end);
     get(*instance, "xrCreateSession", g_next_create_session);

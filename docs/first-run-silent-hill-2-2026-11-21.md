@@ -55,3 +55,23 @@ nobody at the headset.
   running and the meter's hooks bisected (other OpenXR layers switched off one at a time by their disable variables).
 - Tefa watching the monitor during try 3: the game window showed the "compiling shaders" screen, flickering rapidly,
   while the mod's log said the character was in the town.
+
+## Why the meter counted nothing: another layer (2026-11-21 23:04 to 2026-11-22 00:03, real headset, menu starts)
+
+The meter now counts its calls. In the empty starts it saw **1 wait and 0 frames handed in** for the whole run, while
+the game sent ~57 frames a second to the headset: after the first frame the frame calls no longer passed through it.
+The other OpenXR layers on this PC were switched off in their registry list (backed up, put back after):
+
+| layers on (besides the meter and Virtual Desktop's) | starts | clean | empty meter | start crash |
+| --- | --- | --- | --- | --- |
+| all four (OBS mirror, xrFPS, Hand Freeze, Window View) | 13 | 5 | 3 | 5 |
+| none | 6 | 6 | 0 | 0 |
+| OBS mirror + xrFPS | 3 | 3 | 0 | 0 |
+| OBS mirror + xrFPS + Hand Freeze | 3 | 3 | 0 | 0 |
+| all four again (stopped by a pause) | 2 | 1 | 0 | 1 |
+| Window View alone | 4 | 1 | 1 | 2 |
+
+So the Window View layer is what takes the frame calls past the meter, and very likely what causes Silent Hill 2's
+occasional start crash as well `[measured, n small; the crash link is a strong hypothesis]`. Tefa, watching: a crash
+may have come when the game window was clicked out of focus (not sure, maybe a coincidence).
+Until Window View is fixed: run The Optimizer with Window View's layer off (its registry value set to 1).

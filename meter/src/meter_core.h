@@ -43,6 +43,14 @@ public:
     }
     void wait_end(double now_ms, int64_t period_ns) {
         std::lock_guard<std::mutex> l(m_);
+        waits_++;
+        // The last wait was never followed by a frame handed in that we saw: still a frame the headset got (the
+        // wait-to-wait time is the frame time), so it is kept with its work unknown (-1). Seen 2026-11-21 in Silent
+        // Hill 2 with the real headset: some starts showed waits and no hand-ins, and the meter wrote nothing.
+        if (armed_) {
+            unended_++;
+            push_row(-1.0);
+        }
         if (t0_ < 0) t0_ = now_ms;
         prev_end_ = cur_end_;
         cur_end_ = now_ms;
@@ -54,13 +62,29 @@ public:
     // wait) makes no row.
     void frame_end(double now_ms) {
         std::lock_guard<std::mutex> l(m_);
-        if (!armed_) return;
+        ends_++;
+        if (!armed_) {
+            orphan_ends_++;
+            return;
+        }
+        push_row(now_ms - cur_end_);
+    }
+    // Counters for finding out why a meter saw no frames: waits, hand-ins, hand-ins with no wait before them, waits
+    // with no hand-in after them.
+    uint64_t waits() { std::lock_guard<std::mutex> l(m_); return waits_; }
+    uint64_t ends() { std::lock_guard<std::mutex> l(m_); return ends_; }
+    uint64_t orphan_ends() { std::lock_guard<std::mutex> l(m_); return orphan_ends_; }
+    uint64_t unended() { std::lock_guard<std::mutex> l(m_); return unended_; }
+
+private:
+    // One row for the frame the last wait opened (the lock is held by the caller).
+    void push_row(double work_ms) {
         armed_ = false;
         Row r{};
         r.t_ms = cur_end_ - t0_;
         r.interval_ms = prev_end_ >= 0 ? cur_end_ - prev_end_ : 0;
         r.wait_ms = cur_wait_;
-        r.work_ms = now_ms - cur_end_;
+        r.work_ms = work_ms;
         r.period_ms = period_ms_;
         r.missed = (period_ms_ > 0 && r.interval_ms > MISSED_FACTOR * period_ms_) ? 1 : 0;
         pending_.push_back(r);
@@ -69,6 +93,8 @@ public:
         total_++;
         total_missed_ += r.missed;
     }
+
+public:
     // The rows since the last call, for the file.
     std::vector<Row> take_rows() {
         std::lock_guard<std::mutex> l(m_);
@@ -103,6 +129,7 @@ public:
             wait_begin_ = o.wait_begin_; prev_end_ = o.prev_end_; cur_end_ = o.cur_end_; cur_wait_ = o.cur_wait_;
             t0_ = o.t0_; period_ms_ = o.period_ms_; armed_ = o.armed_; pending_ = o.pending_; window_ = o.window_;
             total_ = o.total_; total_missed_ = o.total_missed_;
+            waits_ = o.waits_; ends_ = o.ends_; orphan_ends_ = o.orphan_ends_; unended_ = o.unended_;
         }
         return *this;
     }
@@ -112,7 +139,7 @@ private:
     double wait_begin_ = -1, prev_end_ = -1, cur_end_ = -1, cur_wait_ = 0, t0_ = -1, period_ms_ = 0;
     bool armed_ = false;
     std::deque<Row> pending_, window_;
-    uint64_t total_ = 0, total_missed_ = 0;
+    uint64_t total_ = 0, total_missed_ = 0, waits_ = 0, ends_ = 0, orphan_ends_ = 0, unended_ = 0;
 };
 
 inline const char* csv_header() { return "t_ms,interval_ms,wait_ms,work_ms,period_ms,missed\n"; }
