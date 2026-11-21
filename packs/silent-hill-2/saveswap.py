@@ -1,11 +1,11 @@
 """saveswap.py: start an unattended run from a chosen save slot, and put every save back afterwards.
 
-Why: the game's Continue loads the newest slot, and no game function loads a chosen one (KNOWN.md, 2026-11-18). The
-newest slot can stand among enemies (James dies within a minute); the prison armory slot is calm and has every weapon.
+Why: the game's Continue loads the slot the player last used, and no game function loads a chosen one (KNOWN.md,
+2026-11-18 and 2026-11-21). A slot can stand among enemies (James dies within a minute); the prison armory slot is calm and has every weapon.
 Done by hand twice (2026-11-18, 2026-11-19), so it is a tool now.
 
     python saveswap.py start [slot=3]   game CLOSED: copies the whole save folder away, then puts slot N's file over
-                                         the newest slot's file (Continue then loads slot N's place)
+                                         every other slot's file (Continue then loads slot N's place)
     python saveswap.py end              game CLOSED: puts every file back from the copy and proves it by hash
     python saveswap.py status           says whether a swap is in force
 
@@ -51,7 +51,6 @@ def start(slot):
     if not os.path.exists(src):
         sys.exit("saveswap: slot %d has no file" % slot)
     slots = glob.glob(os.path.join(d, "SaveGameData_*.sav"))
-    newest = max(slots, key=os.path.getmtime)
     copy = os.path.join(KEEP, "saves-" + time.strftime("%Y%m%d-%H%M%S"))
     os.makedirs(KEEP, exist_ok=True)
     shutil.copytree(d, copy)
@@ -59,11 +58,16 @@ def start(slot):
     if hashes(copy) != before:
         sys.exit("saveswap: the copy does not match the save folder; nothing changed")
     with open(MARK, "w") as f:
-        json.dump({"copy": copy, "before": before, "slot": slot, "over": os.path.basename(newest)}, f, indent=1)
-    if os.path.abspath(src) != os.path.abspath(newest):
-        shutil.copyfile(src, newest)   # a fresh modified time: it stays the newest
-    print("saveswap: slot %d now sits over %s (the newest); %d files copied away. Run `end` after the game closes."
-          % (slot, os.path.basename(newest), len(before)))
+        json.dump({"copy": copy, "before": before, "slot": slot, "over": "every other slot"}, f, indent=1)
+    # Every OTHER slot file gets slot N's save, not only the newest: Continue follows the slot the player last used
+    # (kept in the profile), not the newest file. On 2026-11-21 the newest file held slot 0, then slot 1, and Continue
+    # still loaded the prison armory both times (the last slot used by hand). With every slot the same, Continue can
+    # only land on slot N. `end` puts every file back by hash.
+    over = [p for p in slots if os.path.abspath(p) != os.path.abspath(src)]
+    for p in over:
+        shutil.copyfile(src, p)
+    print("saveswap: slot %d now sits over every other slot (%d files); %d files copied away. Run `end` after the game "
+          "closes." % (slot, len(over), len(before)))
 
 
 def end():

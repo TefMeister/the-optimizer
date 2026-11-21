@@ -15,6 +15,8 @@
   connector (no VR trigger: the connector cannot pull one, and Enter passes the prompt); the crash sign is UEVR's
   exception-handler line (the old one is also written in starts that do not crash); the console's `god` does nothing in
   this game, so it stays without god mode.
+- Silent Hill 2's save swapper puts the chosen slot over every other slot, not only the newest: Continue follows the slot
+  last used, so on the first run every spot loaded the same prison armory.
 
 ## 0.1.0 (being built), 2026-11-21
 
