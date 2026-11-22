@@ -75,3 +75,17 @@ So the Window View layer is what takes the frame calls past the meter, and very 
 occasional start crash as well `[measured, n small; the crash link is a strong hypothesis]`. Tefa, watching: a crash
 may have come when the game window was clicked out of focus (not sure, maybe a coincidence).
 Until Window View is fixed: run The Optimizer with Window View's layer off (its registry value set to 1).
+
+## Window View's layer off: the crash stays (2026-11-22 12:20 to 12:37, pretend headset)
+
+11 menu starts with Window View's OpenXR layer off (registry value 1, put back to 0 after), the meter on:
+**3 start crashes (starts 4, 5 and 10), 8 clean, no empty meter** `[measured, simulator, n=11]`. Every start that
+reached the menu counted all its frames (5100 to 6000; waits = frames). So Window View is not the start crash's cause.
+A reading of the crash dumps and of UEVR's own program file puts it in UEVR's Ghosting Fix: for the second eye it
+keeps one of the game's scene states and never checks it is still alive, and the game frees it in the start stall
+(the SH2 project's note `modding-notes/2026-11-22-start-crash-is-not-window-view.md`).
+The empty meter of last night re-read: in those runs UEVR failed to rebuild its eye pictures and handed the headset no
+frame at all; the meter counted that correctly, and Window View's code cannot make a layer be skipped.
+For The Optimizer this means: a start crash in Silent Hill 2 is the game with UEVR, about 1 start in 4, and the tour's
+retry is the right answer to it. The pretend-headset tour over the three spots was not run this time (it was to run
+only if the starts were clean).
